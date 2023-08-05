@@ -736,6 +736,7 @@ Strictly speaking, it is not a preprocessor, but it is called a preprocessor bec
   References an external file and adds it to the calling module.
   ```
   import "foo.xsm";
+  import foo from "foo.xsm"; // Named import. You can access the imported module using foo.name.
   import "foo.xsm", 0x8000, virtual;  // Treats the program as if it were loaded at the specified address. The binary is not generated at build time.
   import foo from "foo.xsm", 0x8000;  // Read with address specified. The program must be transferred to that address.
   // Transfer is done with the move instruction.
