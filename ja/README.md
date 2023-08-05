@@ -5,8 +5,14 @@ Z80構造化アセンブリ言語XSMのシンタックスハイライト、ア�
 ## オールマシン語
 なんと聞こえのいい言葉か。
 
+## 特徴
+- 機械語をC言語やJavaScriptのような文法で表記することが出来る。
+- 存在しない命令を複数の命令を組み合わせることで実現(SUB HL,BC、SLA HL等の命令)。
+- ROM化可能なコードを出力する。
+- 変数は静的に配置される(再帰呼び出しは自分で頑張る)。
+
 ## 世界一面倒なHello, World
-冗長かつ最適化されていない"Hello, World"ですがXSMの構文がわかります。
+冗長かつ最適化されていない"Hello, World"ですがXSMの文法を学ぶことが出来ます。
 ```
 org 0x100;
 import MSXDOS from "xsm/msx/msxdos.xsm";
@@ -21,13 +27,14 @@ function print(DE) dispose DE {
         // loop_start:
         for(A = 0; A < sizeof(hello); A++) {
             using(AF,DE) {                   // push AF; push DE;
-                unsafe B = *DE;              // B = A = *DE;
+                unsafe E = *DE;              // E = A = *DE;
                 // null char then exit
-                if(B == 0) {                 // inc B; dec B; // set Z flag
-                    break;                   // pop DE; pop AF; jp loop_end;
+                if(E == 0) {                 // inc E; dec E; // set Z flag
+                    break;                   // pop DE; pop AF; jr loop_end;
                 }            
-                // put char to console
-                MSXDOS._CONOUT(B);           // E = B; C = 0x02; call BDOS;
+                // put char to console       // function(0x0005) _CONOUT(e, c = 0x02);
+                                             // assignment to E is omitted
+                MSXDOS._CONOUT(E);           // C = 0x02; call 0x0005;
             }                                // pop DE; pop AF;
             DE++;
         }                                    // A++;jr loop_start;
@@ -48,3 +55,6 @@ function print(DE) dispose DE {
   .xsmファイルがアセンブルされ、.comファイルが生成されます。
 
 4. MSX-DOSやCP/Mなどに生成された.comファイルを転送し実行します。
+
+### リファレンスマニュアルなど
+- [xsm-vscode-extension](https://github.com/garymsx/xsm-vscode-extension)
