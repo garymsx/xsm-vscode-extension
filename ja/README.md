@@ -5,6 +5,21 @@ Z80構造化アセンブリ言語XSMのシンタックスハイライト、ア�
 ## オールマシン語
 なんと聞こえのいい言葉か。
 
+### リファレンスマニュアルなど
+- [xsm-vscode-extension](https://github.com/garymsx/xsm-vscode-extension)
+
+### アップデート
+- 0.0.5
+  - xsmconfig.jsonにbuildを追加  
+    ビルド対象を固定することが出来ます。
+    ```
+    	"build": [
+        "main.xsm", "sub.xsm", ...
+    	],
+    ```
+  - バグ修正
+    - __heapが正しく参照できていない問題の対応
+
 ## 特徴
 - 機械語をC言語やJavaScriptのような文法で表記することが出来る。
 - 存在しない命令を複数の命令を組み合わせることで実現(SUB HL,BC、SLA HL等の命令)。
@@ -55,6 +70,3 @@ function print(DE) dispose DE {
   .xsmファイルがアセンブルされ、.comファイルが生成されます。
 
 4. MSX-DOSやCP/Mなどに生成された.comファイルを転送し実行します。
-
-### リファレンスマニュアルなど
-- [xsm-vscode-extension](https://github.com/garymsx/xsm-vscode-extension)

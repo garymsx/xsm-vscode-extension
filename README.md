@@ -2,17 +2,32 @@
 
 Provides syntax highlighting and assembler for the Z80 structured assembly language XSM.
 
-## All Machine Code
-What a fancy term.
+## Machine Language
+What a beautiful phrase.
+
+### Reference Manuals, etc.
+- [xsm-vscode-extension](https://github.com/garymsx/xsm-vscode-extension)
+
+### Updates
+- 0.0.5
+  - Added "build" to xsmconfig.json  
+    You can now specify the build target.
+    ```
+    	"build": [
+        "main.xsm", "sub.xsm", ...
+    	],
+    ```
+  - Bug fixes
+    - Fixed an issue where __heap was not being referenced correctly.
 
 ## Features
-- Can express machine code using syntax similar to C or JavaScript.
-- Implements non-existent instructions by combining multiple instructions (e.g. SUB HL, BC, SLA HL, etc.).
-- Generates code that can be ROM-based.
-- Variables are statically allocated (recursion must be handled manually).
+- Machine code can be expressed using syntax similar to C or JavaScript.
+- Non-existent instructions can be achieved by combining multiple instructions (e.g. SUB HL, BC, SLA HL, etc.).
+- Outputs code that can be ROMized.
+- Variables are statically allocated (recursive calls must be handled manually).
 
-## The Most Tedious "Hello, World"
-Although it is verbose and unoptimized, this "Hello, World" program can help you learn the syntax of XSM.
+## The Most Boring Hello, World in the World
+This is a verbose and unoptimized "Hello, World" that allows you to learn XSM syntax.
 ```
 org 0x100;
 import MSXDOS from "xsm/msx/msxdos.xsm";
@@ -49,12 +64,9 @@ function print(DE) dispose DE {
 1. Open the command palette and run `xsm init`.  
    This will create the xsmconfig.json file.
 
-2. Create a .xsm file and write your program in it.
+2. Create a .xsm file and write your program.
 
 3. Open the command palette and run `xsm build`.  
    The .xsm file will be assembled and a .com file will be generated.
 
-4. Transfer and execute the generated .com file on platforms like MSX-DOS or CP/M.
-
-### Reference Manual, etc.
-- [xsm-vscode-extension](https://github.com/garymsx/xsm-vscode-extension)
+4. Transfer the generated .com file to MSX-DOS, CP/M, or other compatible systems and run it.

@@ -7,7 +7,11 @@ xsm initコマンドで作成することができます。
 {
 	"locale": "ja",
 	"rootDir": "./src",
-	"outputDir": "./build",
+	"outputDir": "./out",
+	"build": [
+		"program1.xsm",
+		"program2.xsm"
+	]
 	"importDir": [
 		"./include",
 	],
@@ -15,10 +19,10 @@ xsm initコマンドで作成することができます。
 		"cacheRegister" : true,
 		"jrJump": true
 	},
-  "debug": {
+    "debug": {
 		"source": true,
 		"comment": true
-  }
+    }
 }
 ```
 
@@ -37,6 +41,10 @@ xsm initコマンドで作成することができます。
 ### importDir
 importやincludeが参照するファイルのルートディレクトリを指定します。  
 複数指定することができます。
+
+### build
+ビルド対象のファイルを指定します。  
+指定されていない場合は、開いているファイルをビルドします。  
 
 ### optimize
 最適化オプションを指定します。  

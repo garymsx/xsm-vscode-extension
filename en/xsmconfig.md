@@ -7,7 +7,11 @@ Can be created using the xsm init command.
 {
 	"locale": "ja",
 	"rootDir": "./src",
-	"outputDir": "./build",
+	"outputDir": "./out",
+	"build": [
+		"program1.xsm",
+		"program2.xsm"
+	]
 	"importDir": [
 		"./include",
 	],
@@ -15,10 +19,10 @@ Can be created using the xsm init command.
 		"cacheRegister" : true,
 		"jrJump": true
 	},
-  "debug": {
+    "debug": {
 		"source": true,
 		"comment": true
-  }
+    }
 }
 ```
 
@@ -32,18 +36,22 @@ Error messages will vary depending on the locale.
 Specifies the root directory of the source files.
 
 ### outputDir
-Specifies the output directory of the build files.
+Specifies the output directory for the build files.
 
 ### importDir
 Specifies the root directory of the files referenced by import or include.  
 Multiple directories can be specified.
 
+### build
+Specifies the files to be built.  
+If not specified, the currently open file will be built.
+
 ### optimize
 Specifies the optimization options.  
-  - cacheRegister - If implicit register usage is detected, the used register is cached to avoid repeated referencing.  
-  - jrJump - Replaces JP instructions generated internally with JR instructions in if statements, etc. If JR is not possible, JP instructions remain the same.
+  - cacheRegister - If implicit register usage is performed, caches the used registers to avoid repeated references.  
+  - jrJump - Replaces JP instructions generated internally in if statements with JR instructions. If JR is not possible, it remains as JP instructions.
 
 ### debug
 Specifies the debug options.  
-  - source - Allows you to view the assembler source during the build.  
+  - source - Allows viewing of the assembler source during the build.  
   - comment - Adds detailed information to the source.
