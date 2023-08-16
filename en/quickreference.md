@@ -250,7 +250,7 @@
   function foo(C = 0x05); // Specifies the value when the parameter is omitted
 
   // BIOS or resident processes can be defined as follows:
-  function foo(C) = 0xe000; // Specifies the address
+  function(0xe000) foo(C); // Specifies the address
   ```
 
 ## Labels and Jumps
