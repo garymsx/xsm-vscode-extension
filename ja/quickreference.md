@@ -468,7 +468,7 @@
   }
   ```
 
-## let(TODO)
+## let(未実装)
 
   let文を使うと計算式を実行し結果を得ることが出来ます。  
   この命令はB/C/IX以外のレジスタを使用して計算式を実行し、使用するレジスタの退避は行いませんので注意してください。  
@@ -770,6 +770,12 @@
   import "foo.xsm", 0x4000, 0x10000;   // 2つ目のアドレスは配置アドレスを指定します。
   // 転送はmove命令で行います。
   move 0x8000, foo;
+  ```
+  以下の3つは最初から定義済みのimportになります。
+  ```
+  import "xsm/msx/bios.xsm";       // BIOS
+  import "xsm/msx/extbios.xsm";    // 拡張BIOS
+  import "xsm/msx/workarea.xsm";   // BASICやBIOSのワークエリア
   ```
 
 - include  
