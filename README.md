@@ -1,4 +1,4 @@
-# XSM Language Support
+# XSM Language Support(Z80 Assembler)
 
 Provides syntax highlighting and assembler for the Z80 structured assembly language XSM.
 
@@ -9,6 +9,11 @@ What a beautiful phrase.
 - [xsm-vscode-extension](https://github.com/garymsx/xsm-vscode-extension)
 
 ### Updates
+- 0.0.9
+  - Added placement address to `import`
+  - Added output size to `module`
+- 0.0.6 - 0.0.8  
+  Bug fixes
 - 0.0.5
   - Added "build" to xsmconfig.json  
     You can now specify the build target.

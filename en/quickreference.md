@@ -647,9 +647,12 @@ Only the instructions that have been added or modified are described in detail.
 Strictly speaking, it is not a preprocessor, but for convenience, we call it a preprocessor.
 
 - module  
-  By default, the output file is a .com file, but it can be changed to a different name using the module directive.
+  By default, the output file is created as a .com file, but you can use the "module" keyword to specify a different name.  
+  If a size is specified, the file will be padded with zeros until it reaches that size.
+
   ```
   module foo.bin;
+  module foo.rom, 0x4000; // Create a ROM file with a size of 4KB.
   ```
 
 - org  

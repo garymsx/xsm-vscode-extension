@@ -1,4 +1,4 @@
-# XSM Language Support
+# XSM Language Support(Z80 Assembler)
 
 Z80構造化アセンブリ言語XSMのシンタックスハイライト、アセンブラを提供します。  
 
@@ -9,6 +9,11 @@ Z80構造化アセンブリ言語XSMのシンタックスハイライト、ア�
 - [xsm-vscode-extension](https://github.com/garymsx/xsm-vscode-extension)
 
 ### アップデート
+- 0.0.9
+  - `import`に配置アドレスを追加
+  - `module`に出力サイズを追加
+- 0.0.6 - 0.0.8  
+  バグ修正
 - 0.0.5
   - xsmconfig.jsonにbuildを追加  
     ビルド対象を固定することが出来ます。
