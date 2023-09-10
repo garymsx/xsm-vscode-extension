@@ -9,21 +9,19 @@ Z80構造化アセンブリ言語XSMのシンタックスハイライト、ア�
 - [xsm-vscode-extension](https://github.com/garymsx/xsm-vscode-extension)
 
 ### アップデート
+- 0.0.11
+  - `from`のコンバーターのオプションの書式を変更(\[変数=値\, ...], 方式)
 - 0.0.9
   - `import`に配置アドレスを追加
   - `module`に出力サイズを追加
-- 0.0.6 - 0.0.8  
-  バグ修正
 - 0.0.5
   - xsmconfig.jsonにbuildを追加  
     ビルド対象を固定することが出来ます。
     ```
     	"build": [
-        "main.xsm", "sub.xsm", ...
+          "main.xsm", "sub.xsm", ...
     	],
     ```
-  - バグ修正
-    - __heapが正しく参照できていない問題の対応
 
 ## 特徴
 - 機械語をC言語やJavaScriptのような文法で表記することが出来る。
@@ -43,7 +41,7 @@ print(&hello);
 return;
 
 function print(DE) dispose DE {
-    using(AF,BC,HL,IX,IY) {                  // push AF,BC,HL,IX,IY
+    using(AF,BC,HL,IX,IY) {                  // push AF; push BC; push HL; push IX; push IY;
         // loop_start:
         for(A = 0; A < sizeof(hello); A++) {
             using(AF,DE) {                   // push AF; push DE;
@@ -58,11 +56,11 @@ function print(DE) dispose DE {
             }                                // pop DE; pop AF;
             DE++;
         }                                    // A++;jr loop_start;
-        // loop_end:
+        // loop_end:                         // pop IY;pop IX;pop HL;pop BC;pop AF;
     }
 }
 // 1-line version
-// MSXDOS._STROUT("Hello, World$"); // $ is null-terminated char
+// MSXDOS._STROUT("Hello, World$"); // $ is terminated char
 ```
 
 ### 始め方

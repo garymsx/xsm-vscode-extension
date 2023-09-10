@@ -1,38 +1,36 @@
-# XSM Language Support(Z80 Assembler)
+# XSM Language Support (Z80 Assembler)
 
-Provides syntax highlighting and assembler for the Z80 structured assembly language XSM.
+Provides syntax highlighting and assembler for the XSM structured assembly language for Z80.
 
-## Machine Language
-What a beautiful phrase.
+## All Machine Code
+What a fancy term.
 
 ### Reference Manuals, etc.
 - [xsm-vscode-extension](https://github.com/garymsx/xsm-vscode-extension)
 
 ### Updates
+- 0.0.11
+  - Changed the format of the options for the `from` converter (\[variable=value, ...], format)
 - 0.0.9
   - Added placement address to `import`
   - Added output size to `module`
-- 0.0.6 - 0.0.8  
-  Bug fixes
 - 0.0.5
-  - Added "build" to xsmconfig.json  
-    You can now specify the build target.
+  - Added `build` to xsmconfig.json  
+    You can specify the build targets.
     ```
     	"build": [
-        "main.xsm", "sub.xsm", ...
+          "main.xsm", "sub.xsm", ...
     	],
     ```
-  - Bug fixes
-    - Fixed an issue where __heap was not being referenced correctly.
 
 ## Features
-- Machine code can be expressed using syntax similar to C or JavaScript.
-- Non-existent instructions can be achieved by combining multiple instructions (e.g. SUB HL, BC, SLA HL, etc.).
+- Allows expressing machine code using syntax similar to C or JavaScript.
+- Implements non-existent instructions by combining multiple instructions (e.g. SUB HL, BC, SLA HL).
 - Outputs code that can be ROMized.
-- Variables are statically allocated (recursive calls must be handled manually).
+- Variables are statically allocated (recursive calls need to be handled manually).
 
-## The Most Boring Hello, World in the World
-This is a verbose and unoptimized "Hello, World" that allows you to learn XSM syntax.
+## The Most Tedious Hello, World
+This is a verbose and unoptimized "Hello, World" that can help you learn the XSM syntax.
 ```
 org 0x100;
 import MSXDOS from "xsm/msx/msxdos.xsm";
@@ -43,7 +41,7 @@ print(&hello);
 return;
 
 function print(DE) dispose DE {
-    using(AF,BC,HL,IX,IY) {                  // push AF,BC,HL,IX,IY
+    using(AF,BC,HL,IX,IY) {                  // push AF; push BC; push HL; push IX; push IY;
         // loop_start:
         for(A = 0; A < sizeof(hello); A++) {
             using(AF,DE) {                   // push AF; push DE;
@@ -58,11 +56,11 @@ function print(DE) dispose DE {
             }                                // pop DE; pop AF;
             DE++;
         }                                    // A++;jr loop_start;
-        // loop_end:
+        // loop_end:                         // pop IY;pop IX;pop HL;pop BC;pop AF;
     }
 }
 // 1-line version
-// MSXDOS._STROUT("Hello, World$"); // $ is null-terminated char
+// MSXDOS._STROUT("Hello, World$"); // $ is terminated char
 ```
 
 ### Getting Started
@@ -74,4 +72,4 @@ function print(DE) dispose DE {
 3. Open the command palette and run `xsm build`.  
    The .xsm file will be assembled and a .com file will be generated.
 
-4. Transfer the generated .com file to MSX-DOS, CP/M, or other compatible systems and run it.
+4. Transfer the generated .com file to an MSX-DOS or CP/M system and run it.

@@ -1,7 +1,7 @@
 {
 	"locale": "ja",
 	"rootDir": "./src",
-	"outputDir": "./build",
+	"outputDir": "./out",
 	"importDir": [],
 	"optimize": {
 		"cacheRegister" : true,

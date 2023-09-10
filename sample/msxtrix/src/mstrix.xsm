@@ -21,7 +21,7 @@ if(IS_ROM == 1) { // 定数によるIFはマクロのように使用可能
 }
 
 // フォントデータ
-byte[] font = from("font.bmp", "sc1", "PRLE");
+byte[] font = from("font.bmp", "sc1", "pack=PRLE");
 virtual byte[8 * 256 + 32] fontBuffer;
 
 // 乱数シード値
