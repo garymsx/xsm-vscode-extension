@@ -1,7 +1,10 @@
 # XSM Quick Reference
 
-## Related Links
-[Memory Map](memorymap.md) [from Function](from.md) [xsmconfig](xsmconfig.md)
+## Link
+- [Memory Map](memorymap.md)
+- [from Function](from.md)
+- [xsmconfig](xsmconfig.md)
+- [imports](imports)
 
 ## Features
 - Allows machine code to be written in a format similar to C or JavaScript

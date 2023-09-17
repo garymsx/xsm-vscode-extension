@@ -1,7 +1,10 @@
 # XSM クイックリファレンス
 
-## 関連リンク
-[メモリマップ](memorymap.md) [from関数](from.md) [xsmconfig](xsmconfig.md)
+## リンク
+- [メモリマップ](memorymap.md)
+- [from関数](from.md)
+- [xsmconfig](xsmconfig.md)
+- [imports](imports)
 
 ## 特徴
 - 機械語をC言語やJavaScriptのように表記することが出来る  
@@ -816,4 +819,3 @@
   }
 
   ```
-

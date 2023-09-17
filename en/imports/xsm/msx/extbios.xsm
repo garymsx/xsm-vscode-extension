@@ -1,0 +1,504 @@
+// Extended BIOS
+import "xsm/msx/bios.xsm";
+import "xsm/msx/workarea.xsm";
+
+/**
+ * Call the extended BIOS
+ * @param IX Address to call
+ */
+function _CALSLT(IX) {
+	const NMI = 0x0066;
+
+    exx;                     // Save argument registers over setup
+	ex AF,AF;
+	HL = 0x015F;             // EXTROM
+	push HL;                 //                 +2 byte
+	HL = 0xc300;             // jp xxxx, nop
+	push HL;                 //                 +4 byte
+    push IX;                 // SUB ROM entry   +6 byte
+	HL = 0x21dd;             // ld ix,xxxx
+	push HL;                 //                 +8 byte
+	HL = 0x3333;             // inc sp, inc sp
+	push HL;                 //                +10 byte
+
+    // HOOK Rewrite NMI
+	HL = 0;
+    HL += SP;
+    A = 0xc3;                // JP
+    H_NMI[0] = A;
+    *(H_NMI + 1) = HL;       // JP to the code stacked in the stack
+
+    ex AF,AF;                // Restore registers
+    exx;
+    CALSLT(NMI);             // Execute NMI(0x0066)
+    ei;
+    HL = 10;                 // Discard the code stacked in the stack
+    HL += SP;
+    SP = HL;
+    return;
+}
+
+/**
+ * Output a character to the graphic screen (only works with screen 5-8).
+ * @type SUB/MSX2
+ * @param A Character code
+ */
+inline EXT_GRPPR(A) {
+	IX = 0x0089;
+	_CALSLT(IX);
+}
+
+/**
+ * Draw a box
+ * @type SUB/MSX2
+ * @param BC Starting X coordinate
+ * @param DE Starting Y coordinate
+ * @param 【GXPOS(0xFCB3)】 Ending X coordinate
+ * @param 【GYPOS(0xFCB5)】 Ending Y coordinate
+ * @param 【ATRBYT(0xF3F2)】Attribute (color)
+ * @param 【LOGOPR(0xFB02)】Logical operation code
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline EXT_NVBXLN(BC,DE) dispose AF, BC, DE, HL, IX, IY {
+	IX = 0x00C9;
+	_CALSLT(IX);
+}
+
+/**
+ * Draw a filled box.
+ * @type SUB/MSX2
+ * @param BC Starting X coordinate
+ * @param DE Starting Y coordinate
+ * @param 【GXPOS(0xFCB3)】 Ending X coordinate
+ * @param 【GYPOS(0xFCB5)】 Ending Y coordinate
+ * @param 【ATRBYT(0xF3F2)】Attribute (color)
+ * @param 【LOGOPR(0xFB02)】Logical operation code
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline EXT_NVBXFL(BC,DE) dispose AF, BC, DE, HL, IX, IY {
+	IX = 0x00CD;
+	_CALSLT(IX);
+}
+
+/**
+ * Change the screen mode.
+ * @type SUB/MSX2
+ * @param A Screen mode (0-8)
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline EXT_CHGMOD(A) dispose AF, BC, DE, HL, IX, IY {
+	IX = 0x00D1;
+	_CALSLT(IX);
+}
+
+/**
+ * Set the screen to text mode (40x24) and initialize it.
+ * @type SUB/MSX2
+ * @param 【TXTNAM(0xF3B3)】Pattern name table start address
+ * @param 【TXTCGP(0xF3B7)】Pattern generator table start address
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline EXT_INITXT() dispose AF, BC, DE, HL, IX, IY {
+	IX = 0x0105;
+	_CALSLT(IX);
+}
+
+/**
+ * Set the screen to text mode (32x24) and initialize it.
+ * @type SUB/MSX2
+ * @param 【T32NAM(0xF3BD)】Pattern name table start address
+ * @param 【T32COL(0xF3BF)】Color table start address
+ * @param 【T32CGP(0xF3CI)】Pattern generator table start address
+ * @param 【T32ATR(0xF3C3)】Sprite attribute table start address
+ * @param 【T32PAT(0xF3C5)】Sprite generator table start address
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline EXT_INIT32() dispose AF, BC, DE, HL, IX, IY {
+	IX = 0x00D9;
+	_CALSLT(IX);
+}
+
+/**
+ * Set the screen to high-resolution graphic mode and initialize it.
+ * @type SUB/MSX2
+ * @param 【GRPNAM(F3C7H)】Pattern name table start address
+ * @param 【GRPCOL(F3C9H)】Color table start address
+ * @param 【GRPCGP(F3CBH)]】Pattern generator table start address
+ * @param 【GRPATR(F3CDH)】Sprite attribute table start address
+ * @param 【GRPPAT(F3CFH)】Sprite generator table start address
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline EXT_INIGRP() dispose AF, BC, DE, HL, IX, IY {
+	IX = 0x00DD;
+	_CALSLT(IX);
+}
+
+/**
+ * Set the screen to multicolor mode and initialize it.
+ * @type SUB/MSX2
+ * @param 【MLTNAM(0xF3DI)】Pattern name table start address
+ * @param 【MLTCOL(0xF3D3)】Color table start address
+ * @param 【MLTCGP(0xF3D5)】Pattern generator table start address
+ * @param 【MLTATR(0xF3D7)】Sprite attribute table start address
+ * @param 【MLTPAT(0xF3D9)】Sprite generator table start address
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline EXT_INIMLT() dispose AF, BC, DE, HL, IX, IY {
+	IX = 0x00E1;
+	_CALSLT(IX);
+}
+
+/**
+ * Set VDP to text mode (40x24).
+ * @type SUB/MSX2
+ * @param 【TXTNAM(0xF3B3)】 Address of pattern name table
+ * @param 【TXTCGP(0xF3B7)】 Address of pattern generator table
+ * @param 【LINL40(0xF3AE)】 Width of one line (set by WIDTH statement)
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline EXT_SETTXT() dispose AF, BC, DE, HL, IX, IY {
+	IX = 0x00E5;
+	_CALSLT(IX);
+}
+
+/**
+ * Set VDP to text mode (32x24).
+ * @type SUB/MSX2
+ * @param 【T32NAM(0xF3BD)】 Address of pattern name table
+ * @param 【T32COL(0xF3BF)】 Address of color table
+ * @param 【T32CGP(0xF3C1)】 Address of pattern generator table
+ * @param 【T32ATR(0xF3C3)】 Address of sprite attribute table
+ * @param 【T32PAT(0xF3C5)】 Address of sprite generator table
+ * @param 【LINL32(0xF3AF)】 Width of one line (set by WIDTH statement)
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline EXT_SETT32() dispose AF, BC, DE, HL, IX, IY {
+	IX = 0x00E9;
+	_CALSLT(IX);
+}
+
+/**
+ * Set VDP to high resolution mode.
+ * @type SUB/MSX2
+ * @param 【GRPNAM(0xF3C7)】 Address of pattern name table
+ * @param 【GRPCOL(0xF3C9)】 Address of color table
+ * @param 【GRPCGP(0xF3CB)】 Address of pattern generator table
+ * @param 【GRPATR(0xF3CD)】 Address of sprite attribute table
+ * @param 【GRPPAT(0xF3CF)】 Address of sprite generator table
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline EXT_SETGRP() dispose AF, BC, DE, HL, IX, IY {
+	IX = 0x00ED;
+	_CALSLT(IX);
+}
+
+/**
+ * Set VDP to multicolor mode.
+ * @type SUB/MSX2
+ * @param 【MLTNAM(0xF3DI)】 Address of pattern name table
+ * @param 【MLTCOL(0xF3D3)】 Address of color table
+ * @param 【MLTCGP(0xF3D5)】 Address of pattern generator table
+ * @param 【MLTATR(0xF3D7)】 Address of sprite attribute table
+ * @param 【MLTPAT(0xF3D9)】 Address of sprite generator table
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline EXT_SETMLT() dispose AF, BC, DE, HL, IX, IY {
+	IX = 0x00F1;
+	_CALSLT(IX);
+}
+
+/**
+ * Initialize all sprites.
+ * Set the sprite pattern to null, the sprite number to the sprite plane number,
+ * and the sprite color to the foreground color.
+ * Set the vertical position of the sprite to 217.
+ * @type SUB/MSX2
+ * @param 【SCRMOD(0xFCAF)] Screen mode
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline EXT_CLRSPR() dispose AF, BC, DE, HL, IX, IY {
+	IX = 0x00F5;
+	_CALSLT(IX);
+}
+
+/**
+ * Get the character pattern.
+ * @type SUB/MSX2
+ * @param A Character code
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline EXT_CALPAT(A) dispose AF, BC, DE, HL, IX, IY {
+	IX = 0x00F9;
+	_CALSLT(IX);
+}
+
+/**
+ * Get the sprite attribute table start address.
+ * @type SUB/MSX2
+ * @param A Sprite number
+ * @dispose AF, DE
+ */
+inline EXT_CALATR(A) dispose AF, DE {
+	IX = 0x00FD;
+	_CALSLT(IX);
+}
+
+/**
+ * Get the current sprite size. This routine is the same as the BIOS with the same name in MAINROM.
+ * @type SUB/MSX2
+ * @return A Sprite size (number of bytes)
+ *         CY flag Set only for 16x16 size, reset for other sizes
+ */
+inline EXT_GSPSIZ(): A {
+	IX = 0x0101;
+	_CALSLT(IX);
+}
+
+/**
+ * Get the character pattern.
+ * @type SUB/MSX2
+ * @param A Character code
+ * @return 【PATWRK (FC40H)】Character pattern
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline EXT_GETPAT(A) dispose AF, BC, DE, HL, IX, IY {
+	IX = 0x0105;
+	_CALSLT(IX);
+}
+
+/**
+ * Write data to VRAM.
+ * @type SUB
+ * @param HL VRAM address to write (0-0xFFFF)
+ * @param A Data to write
+ * @dispose AF
+ */
+inline EXT_WRTVRM(HL, A) dispose AF {
+	IX = 0x0109;
+	_CALSLT(IX);
+}
+
+/**
+ * Read data from VRAM.
+ * @type SUB/MSX2
+ * @param HL VRAM address to read (0-0xFFFF)
+ * @return A Read value
+ */
+inline EXT_RDVRM(HL): A {
+	IX = 0x010D;
+	_CALSLT(IX);
+}
+
+/**
+ * Change the colors of the screen.
+ * @type SUB/MSX2
+ * @param A Screen mode
+ * @param 【FORCLR(0xF3E9)】Foreground color
+ * @param 【BAKCLR(0xF3EA)】Background color
+ * @param 【BDRCLR(0xF3EB)]】Border color
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline EXT_CHGCLR(A) dispose AF, BC, DE, HL, IX, IY {
+	IX = 0x0111;
+	_CALSLT(IX);
+}
+
+/**
+ * Clear the screen.
+ * @type SUB/MSX2
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline EXT_CLSSUB() dispose AF, BC, DE, HL, IX, IY {
+	IX = 0x0115;
+	_CALSLT(IX);
+}
+
+/**
+ * Display function keys.
+ * @type SUB/MSX2
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline EXT_DSPFNK() dispose AF, BC, DE, HL, IX, IY {
+	IX = 0x011D;
+	_CALSLT(IX);
+}
+
+/**
+ * Write data to VDP register.
+ * @type SUB/MSX2
+ * @param C VDP register number
+ * @param B Data to write
+ * @dispose AF, BC
+ */
+inline EXT_WRTVDP(C,B) dispose AF, BC {
+	IX = 0x012D;
+	_CALSLT(IX);
+}
+
+/**
+ * Get the content of VDP register.
+ * @type SUB/MSX2
+ * @param A VDP register number (0-9)
+ */
+inline EXT_VDPSTR(): A {
+	IX = 0x0131;
+	_CALSLT(IX);
+}
+
+/**
+ * Switch VRAM pages.
+ * @type SUB/MSX2
+ * @param 【DDPAGE(0xFAF5)】Display page number
+ * @param 【ACPAGE(0xFAF6)】Active page number
+ * @dispose AF
+ */
+inline EXT_SETPAG() dispose AF {
+	IX = 0x013D;
+	_CALSLT(IX);
+}
+
+/**
+ * Initialize the palette. The current palette is saved in VRAM.
+ * @type SUB/MSX2
+ * @dispose AF, BC, DE
+ */
+inline EXT_INIPLT() dispose AF, BC, DE {
+	IX = 0x0141;
+	_CALSLT(IX);
+}
+
+/**
+ * Restore the palette from VRAM.
+ * @type SUB/MSX2
+ * @dispose AF, BC, DE
+ */
+inline EXT_RSTPLT() dispose AF, BC, DE {
+	IX = 0x0145;
+	_CALSLT(IX);
+}
+
+/**
+ * Get the color code from the palette.
+ * @type SUB/MSX2
+ * @param A Palette number (0-15)
+ * @return B Red code in the upper 4 bits
+ *           Blue code in the lower 4 bits
+ *         C Green code in the lower 4 bits
+ * @dispose AF, DE
+ */
+inline EXT_GETPLT(A) dispose AF, DE {
+	IX = 0x0149;
+	_CALSLT(IX);
+}
+
+/**
+ * Set the color code to the palette.
+ * @type SUB/MSX2
+ * @param D Palette number (0-15)
+ * @param A Red code in the upper 4 bits
+ *          Blue code in the lower 4 bits
+ * @param E Green code in the lower 4 bits
+ * @dispose AF
+ */
+inline EXT_SETPLT(D, A, E) dispose AF {
+	IX = 0x014D;
+	_CALSLT(IX);
+}
+
+/**
+ * Sound the buzzer
+ * @type SUB/MSX2
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline EXT_BEEP() dispose AF, BC, DE, HL, IX, IY {
+	IX = 0x017D;
+	_CALSLT(IX);
+}
+
+/**
+ * Display the prompt.
+ * @type SUB/MSX2
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline EXT_PROMPT() dispose AF, BC, DE, HL, IX, IY {
+	IX = 0x0181;
+	_CALSLT(IX);
+}
+
+/**
+ * Check the state of the mouse and light pen.
+ * @type SUB/MSX2
+ * @param A Call with the following data. The parentheses indicate the return value:
+ *            8  Return the connection status of the light pen (0xFF for enabled)
+ *            9  Return the X coordinate
+ *            10 Return the Y coordinate
+ *            11 Return the state of the light pen switch (0xFF when pressed)
+ *            12 Return the connection status of the mouse to port l (0xFF for enabled)
+ *            13 Return the X offset
+ *            14 Return the Y offset
+ *            15 Always O
+ *            16 Return the connection status of the mouse to port 2 (0xFF for enabled)
+ *            17 Return the X offset
+ *            18 Return the Y offset
+ *            19 Always O
+ * @return A
+ * @dispose BC, DE, HL, IX, IY
+ */
+inline EXT_NEWPAD(A): A dispose BC, DE, HL, IX, IY {
+	IX = 0x01AD;
+	_CALSLT(IX);
+}
+
+/**
+ * Change the VDP mode. Initialize the palette.
+ * @type SUB/MSX2
+ * @param A Screen mode (0-8)
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline EXT_CHGMDP(A) dispose AF, BC, DE, HL, IX, IY {
+	IX = 0x01B5;
+	_CALSLT(IX);
+}
+
+/**
+ * Display kanji characters on the graphic screen (screen mode 5-8).
+ * @type SUB/MSX2
+ * @param BC JIS kanji code (MSX2: level 1, MSX2+: level 1 and 2)
+ * @param A Display mode
+ *          The display mode has the following meanings, similar to the BASIC PUTKANJI command:
+ *           0 Display in 16 x 16 dots
+ *           1 Display even-numbered dots
+ *           2 Display odd-numbered dots
+ * @param 【GRPACX(0xFCB7)】X coordinate
+ * @param 【GRPACY(0xFCB9)】Y coordinate
+ * @dispose AF
+ */
+inline EXT_KNJPRT(BC, A) dispose AF {
+	IX = 0x01BD;
+	_CALSLT(IX);
+}
+
+/**
+ * Read data from the CLOCK-IC.
+ * @type SUB/MSX2
+ * @param C Register address to read from the CLOCK-IC
+ *              00MMAAAA
+ *                AAAA - Address (0-15)
+ *                MM   - Mode (0-3)
+ * @return A Read data (only the lower 4 bits are valid)
+ */
+inline EXT_REDCLK(C): A {
+	IX = 0x01F5;
+	_CALSLT(IX);
+}
+
+/**
+ * Write data to the CLOCK-IC.
+ * @type SUB
+ * @param C Register address to write to the CLOCK-IC
+ * @param A Data to write
+ */
+inline EXT_WRTCLK(C,A) {
+	IX = 0x01F9;
+	_CALSLT(IX);
+}

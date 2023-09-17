@@ -1,0 +1,1048 @@
+import "xsm/msx/workarea.xsm";
+
+// Inter-slot call related
+
+/**
+ * Selects the slot corresponding to the value in register A and reads 1 byte of memory from that slot.
+ * Calling this routine disables interrupts and interrupts will not be enabled after execution.
+ *
+ * @type MAIN
+ * @param A Slot operation: slot number (bit0-3), extended slot specification (bit7=1)
+ * @param HL Memory address to read from
+ * @return A Value read from memory
+ * @dispose BC, DE
+ */
+function(0x000C) RDSLT(A, HL): A dispose BC, DE;
+
+/**
+ * Selects the slot corresponding to the value in register A and writes a value to the memory in that slot.
+ * Calling this routine disables interrupts and interrupts will not be enabled after execution.
+ *
+ * @type MAIN
+ * @param A Slot operation (same format as RDSLT)
+ * @param HL Memory address to write to
+ * @dispose AF, BC, D
+ */
+function(0x0014) WRSLT(A, HL) dispose AF, BC, D;
+
+/**
+ * Calls a routine in another slot (inter-slot call).
+ *
+ * @type MAIN
+ * @param IX Address to call
+ * @param IY Slot number in the upper 8 bits (same format as RDSLT)
+ */
+function(0x001c) CALSLT(IX, IY = *(EXPTBL - 1));
+
+/**
+ * Selects the slot corresponding to the value in register A and enables the use of that slot.
+ * Calling this routine disables interrupts and interrupts will not be enabled after execution.
+ *
+ * @type MAIN
+ * @param A Slot operation (same format as RDSLT)
+ * @param HL Address to call
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+function(0x0024) ENASLT(A, HL) dispose AF, BC, DE, HL, IX, IY;
+
+/**
+ * Calls a routine in another slot.
+ *
+ * @type MAIN
+ * @dispose AF
+ * @sample
+ *   rst 0x30;
+ *   db  n;    n is the slot number (same format as RDSLT)
+ *   dw  nn;   nn is the address to call
+ */
+function(0x0030) CALLF() dispose AF;
+
+//--------------------------------------------------------------
+
+/**
+ * Checks the RAM and selects a slot to use for system RAM.
+ * After executing this routine, it branches to the initialization routine.
+ *
+ * @type MAIN
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline CHKRAM() dispose AF, BC, DE, HL, IX, IY {
+    CALSLT(0x0000);
+}
+
+/**
+ * Checks if the character pointed to by the HL register is the specified character.
+ * If it is different, it raises a "Syntax error" and jumps to CHRGTR (0010/MAIN).
+ *
+ * @type MAIN
+ * @param HL Character to check. Put the character to compare after the RST instruction that calls this routine (inline parameter).
+ * @return HL +1
+ *         A The character pointed to by HL
+ *         CY flag Set if the checked character is a number
+ *         Z flag Set if the end of the statement (00H or 3AH)
+ * @dispose AF, HL
+ */
+inline SYNCHR(HL) dispose AF, HL {
+    CALSLT(0x0008);
+}
+
+/**
+ * Retrieves a character (or token) from BASIC text.
+ *
+ * @type MAIN
+ * @param HL Memory address where the character to read is stored
+ * @return HL +1
+ *         A The character pointed to by HL
+ *         CY flag Set if the checked character is a number
+ *         Z flag Set if the end of the statement (00H or 3AH)
+ * @dispose AF, HL
+ */
+inline CHRGTR(HL) dispose AF, HL {
+    CALSLT(0x0010);
+}
+
+/**
+ * Outputs a value to the currently used device.
+ *
+ * @type MAIN
+ * @param A Value to output
+ *         PRTFLG(0xF416) Non-zero to output to printer
+ *         PTRFIL(0xF864) Non-zero to output to the file indicated by PRTFIL
+ *        
+ */
+inline OUTDO(A) {
+    CALSLT(0x0018);
+}
+
+/**
+ * Compares the contents of the HL and DE registers.
+ *
+ * @type MAIN
+ * @param HL Value 1 to compare
+ * @param DE Value 2 to compare
+ * @return Z flag Set if HL = DE
+ *         CY flag Set if HL < DE
+ * @dispose AF
+ */
+inline DCOMPR(HL, DE) dispose AF {
+    CALSLT(0x0020);
+}
+
+/**
+ * Checks the type of the DAC (Decimal Accumulator).
+ *
+ * @type MAIN
+ * @param None (DAC type is stored in 【VALTYP(0xF663)】)
+ * @return Depending on the DAC type, the S, Z, P/V, and CY flags change as follows:
+ *         Integer type   Single precision real type   Character type   Double precision real type
+ *         C = 1          C = 1                       C = 1            C = 0*
+ *         S = 1          S = 0                       S = 0            S = 0
+ *         Z = 0          Z = 0                       Z = 1*           Z = 0
+ *         P/V = 1        P/V = 0*                    P/V = 1          P/V = 1
+ *         Each type can be checked by examining the flag with an asterisk (*)
+ * @dispose AF
+ */
+inline GETYPR() dispose AF {
+    CALSLT(0x0028);
+}
+
+/**
+ * Executes the timer interrupt processing routine.
+ *
+ * @type MAIN
+ */
+inline KEYINT() {
+    CALSLT(0x0038);
+}
+
+/**
+ * Initializes the devices.
+ *
+ * @type MAIN
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline INITIO() dispose AF, BC, DE, HL, IX, IY {
+    CALSLT(0x003B);
+}
+
+/**
+ * Initializes the contents of the function keys.
+ * After executing this routine, the display of the function keys will change when the screen is cleared.
+ *
+ * @type MAIN
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline INIFNK() dispose AF, BC, DE, HL, IX, IY {
+    CALSLT(0x003E);
+}
+
+/**
+ * Disables screen display.
+ *
+ * @type MAIN
+ * @dispose AF, BC
+ */
+inline DISSCR() dispose AF, BC {
+    CALSLT(0x0041);
+}
+
+/**
+ * Displays the screen.
+ *
+ * @type MAIN
+ * @dispose AF, BC
+ */
+inline ENASCR() dispose AF, BC {
+    CALSLT(0x0044);
+}
+
+/**
+ * Writes a value to the VDP register.
+ *
+ * @type MAIN/MSX2
+ * @param C VDP register number (register numbers are 0-23, 32-46)
+ * @param B Value to write
+ * @dispose AF, BC
+ */
+inline WRTVDP(C, B) dispose AF, BC {
+    CALSLT(0x0047);
+}
+
+/**
+ * Reads the content of the specified address in VRAM.
+ * However, this routine is for TMS9918 (VDP for MSX1), and only the lower 14 bits of the VRAM address are valid.
+ * When using all bits, use NRDVRM(0174H/MAIN).
+ *
+ * @type MAIN
+ * @param HL VRAM address
+ * @return A Value read
+ * @dispose AF
+ */
+inline RDVRM(HL): A {
+    CALSLT(0x004A);
+}
+
+/**
+ * Writes data to VRAM.
+ * However, this routine is for TMS9918, and only the lower 14 bits of the VRAM address are valid.
+ * When using all bits, use NVRVRM(0177H/MAIN).
+ *
+ * @type MAIN
+ * @param HL VRAM address
+ * @param A Value to write
+ * @dispose AF
+ */
+inline WRTVRM(HL, A) dispose AF {
+    CALSLT(0x004D);
+}
+
+/**
+ * Sets the VRAM address in the VDP and makes it ready for reading.
+ * This routine uses the address auto-increment feature of the VDP to read data from consecutive VRAM areas.
+ * After executing this routine, data is read directly from VRAM via the port.
+ * Therefore, faster reading can be done than using RDVRM in a loop.
+ * However, this routine is for TMS9918, and only the lower 14 bits of the VRAM address are valid.
+ * When using all bits, use NSETRD(016EH/MAIN).
+ *
+ * @type MAIN
+ * @param HL VRAM address
+ * @dispose AF
+ */
+inline SETRD(HL) dispose AF {
+    CALSLT(0x0050);
+}
+
+/**
+ * Sets the VRAM address in the VDP and makes it ready for writing.
+ * The purpose of use is the same as SETRD.
+ * However, this routine is for TMS9918, and only the lower 14 bits of the VRAM address are valid.
+ * When using all bits, use NSTWRT(0171H/MAIN).
+ *
+ * @type MAIN
+ * @param HL VRAM address
+ * @dispose AF
+ */
+inline SETWRT(HL) dispose AF {
+    CALSLT(0x0053);
+}
+
+/**
+ * Fills the specified area of VRAM with the same data.
+ * However, this routine is for TMS9918, and only the lower 14 bits of the VRAM address are valid.
+ * When using all bits, use BIGFIL(016BH/MAIN).
+ *
+ * @type MAIN/MSX2
+ * @param HL VRAM address to start writing
+ * @param BC Length of the area to write (in bytes)
+ * @param A Value to write
+ * @dispose AF, BC
+ */
+inline FILVRM(HL, BC, A) dispose AF, BC {
+    CALSLT(0x0056);
+}
+
+/**
+ * Transfers data from VRAM to memory in blocks.
+ *
+ * @type MAIN/MSX2
+ * @param HL VRAM address to transfer from (all bits are valid)
+ * @param DE RAM address to transfer to
+ * @param BC Length of the transfer (in bytes)
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline LDIRMV(HL, DE, BC) dispose AF, BC, DE, HL, IX, IY {
+    CALSLT(0x0059);
+}
+
+/**
+ * Transfers data from memory to VRAM in blocks.
+ *
+ * @type MAIN/MSX2
+ * @param HL RAM address to transfer from
+ * @param DE VRAM address to transfer to (all bits are valid)
+ * @param BC Length of the transfer (in bytes)
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline LDIRVM(HL, DE, BC) dispose AF, BC, DE, HL, IX, IY {
+    CALSLT(0x005C);
+}
+
+/**
+
+ * Changes the screen mode.
+ * Does not initialize the palette.
+ * If palette initialization is required, execute CHGMDP(00D1H/SUB) after executing this routine.
+ *
+ * @type MAIN/MSX2
+ * @param A Screen mode (0-8)
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline CHGMOD(A) dispose AF, BC, DE, HL, IX, IY {
+    CALSLT(0x005F);
+}
+
+/**
+ * Changes the colors of the screen.
+ * @type MAIN
+ * @param 【FORCLR(0xF3E9)】Foreground color
+ * @param 【BAKCLR(0xF3EA)】Background color
+ * @param 【BDRCLR(0xF3EB)】Border color
+ * @dispose AF, BC, DE, HL, IX, IY
+ *
+ */
+inline CHGCLR() dispose AF, BC, DE, HL, IX, IY {
+    CALSLT(0x0062);
+}
+
+/**
+ * Executes the NMI (Non Maskable Interrupt) processing routine.
+ *
+ * @type MAIN
+ */
+inline NMI() {
+    CALSLT(0x0066);
+}
+
+/**
+ * Initializes all sprites as follows:
+ *     Sprite pattern: Null
+ *     Sprite number: Sprite plane number
+ *     Sprite color: Foreground color
+ *     Vertical position of sprite (SCREEN 0-3): 209
+ *     Vertical position of sprite (SCREEN 4-12): 217
+ * @type MAIN/MSX2
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline CLRSPR() dispose AF, BC, DE, HL, IX, IY {
+    CALSLT(0x0069);
+}
+
+/**
+ * Initializes the screen as TEXT1 mode (SCREEN0, 40x24).
+ * This routine does not initialize the palette.
+ * If palette initialization is required, execute INIPLT(0x0141/SUB) after executing this routine.
+ * @type MAIN/MSX2
+ * @param 【TXTNAM(0xF3B3)】Pattern name table address
+ * @param 【TXTCGP(0xF3B7)】Pattern generator table address
+ * @param 【LINL40(0xF3AE)】Width of one line (set by WIDTH statement)
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline INITXT() {
+    CALSLT(0x006C);
+}
+
+/**
+ * Initializes the screen as TEXT2 mode (SCREEN1, 32x24).
+ * This routine does not initialize the palette.
+ * If palette initialization is required, execute INIPLT(0x0141/SUB) after executing this routine.
+ * @type MAIN/MSX2
+ * @param 【T32NAM(0xF3BD)】Pattern name table address
+ * @param 【T32COL(0xF3BF)】Color table address
+ * @param 【T32CGP(0xF3C1)】Pattern generator table address
+ * @param 【T32ATR(0xF3C3)】Sprite attribute table address
+ * @param 【T32PAT(0xF3C5)】Sprite generator table address
+ * @param 【LINL32(0xF3AF)】Width of one line (set by WIDTH statement)
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline INIT32() dispose AF, BC, DE, HL, IX, IY {
+    CALSLT(0x006F);
+}
+
+/**
+ * Initializes the screen as GRAPHIC1 mode (SCREEN2).
+ * This routine does not initialize the palette.
+ * If palette initialization is required, execute INIPLT(0x0141/SUB) after executing this routine.
+ * @type MAIN/MSX2
+ * @param 【GRPNAM(0xF3C7)】Pattern name table address
+ * @param 【GRPCOL(0xF3C9)】Color table address
+ * @param 【GRPCGP(0xF3CB)】Pattern generator table address
+ * @param 【GRPATR(0xF3CD)】Sprite attribute table address
+ * @param 【GRPPAT(0xF3CF)】Sprite generator table address
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline INIGRP() dispose AF, BC, DE, HL, IX, IY {
+    CALSLT(0x0072);
+}
+
+/**
+ * Initializes the screen as MULTICOLOR mode (SCREEN3).
+ * This routine does not initialize the palette.
+ * If palette initialization is required, execute INIPLT(0x0141/SUB) after executing this routine.
+ * @type MAIN/MSX2
+ * @param 【MLTNAM(0xF3D1)】Pattern name table address
+ * @param 【MLTCOL(0xF3D3)】Color table address
+ * @param 【MLTCGP(0xF3D5)】Pattern generator table address
+ * @param 【MLTATR(0xF3D7)】Sprite attribute table address
+ * @param 【MLTPAT(0xF3D9)】Sprite generator table address 
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline INIMLT() dispose AF, BC, DE, HL, IX, IY {
+    CALSLT(0x0075);
+}
+
+/**
+ * Sets the VDP to TEXT1 mode (SCREEN0, 40x24) only.
+ * @type MAIN/MSX2
+ * @param Same as INITXT
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline SETTXT() dispose AF, BC, DE, HL, IX, IY {
+    CALSLT(0x0078);
+}
+
+/**
+ * Sets the VDP to TEXT2 mode (SCREEN1, 32x24) only.
+ * @type MAIN/MSX2
+ * @param Same as INIT32
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline SETT32() dispose AF, BC, DE, HL, IX, IY {
+    CALSLT(0x007B);
+}
+
+/**
+ * Sets the VDP to GRAPHIC1 mode (SCREEN2) only.
+ * @type MAIN/MSX2
+ * @param Same as INIGRP
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline SETGRP() dispose AF, BC, DE, HL, IX, IY {
+    CALSLT(0x007E);
+}
+
+/**
+ * Sets the VDP to MULTICOLOR mode (SCREEN3) only.
+ * @type MAIN/MSX2
+ * @param Same as INIMLT
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline SETMLT() dispose AF, BC, DE, HL, IX, IY {
+    CALSLT(0x0081);
+}
+
+/**
+ * Acquires the starting address of the sprite generator table.
+ * @type MAIN
+ * @param A Sprite number
+ * @return HL Address
+ * @dispose AF, DE
+ */
+inline CALPAT(A): HL dispose AF, DE {
+    CALSLT(0x0084);
+}
+
+/**
+ * Acquires the starting address of the sprite attribute table.
+ * @type MAIN
+ * @param A Sprite number
+ * @return HL Address
+ * @dispose AF, DE
+ */
+inline CALATR(A): HL dispose AF, DE {
+    CALSLT(0x0087);
+}
+
+/**
+ * Acquires the current sprite size.
+ * @type MAIN
+ * @return A Sprite size (in bytes)
+ *         CY flag Set only if the size is 16x16, otherwise reset
+ */
+inline GSPSIZ(): A {
+    CALSLT(0x008A);
+}
+
+/**
+ * Displays a character on the graphic screen.
+ * @type MAIN/MSX2
+ * @param A Character code
+ * @param 【LOGOPR(0xFB02)】 Logical operation code if the screen mode is 5-12
+ */
+inline GRPPRT(param) {
+    A = param;
+    CALSLT(0x008D);
+}
+
+/**
+ * Initializes the PSG (Programmable Sound Generator) and sets the initial values for the PLAY statement.
+ * @type MAIN
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline GICINI() dispose AF, BC, DE, HL, IX, IY {
+    CALSLT(0x0090);
+}
+
+/**
+ * Writes data to the PSG register.
+ * @type MAIN
+ * @param A PSG register number
+ * @param E Data to write
+ */
+inline WRTPSG(A,E) {
+    CALSLT(0x0093);
+}
+
+/**
+ * Reads the value of the PSG register.
+ * @type MAIN
+ * @param A PSG register number
+ * @return A Value read
+ */
+inline RDPSG(A): A {
+    CALSLT(0x0096);
+}
+
+/**
+ * Check if the PLAY statement is being executed as a background task, and start playing music if it is not.
+ * @type MAIN
+ * @param Set the address indicated by 【QUEUE(F3F3H)】 to the MML data converted to intermediate language (refer to "Section 6.1 PLAY Statement BIOS")
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline STRTMS() dispose AF, BC, DE, HL, IX, IY {
+	CALSLT(0x0099);
+}
+
+/**
+ * Checks the status of the keyboard buffer.
+ * @type MAIN
+ * @return Z flag Set if the buffer is empty, reset otherwise
+ * @dispose AF
+ */
+inline CHSNS() dispose AF {
+    CALSLT(0x009C);
+}
+
+/**
+ * Inputs a character (with waiting for input).
+ * @type MAIN
+ * @return A Inputted code
+ */
+inline CHGET(): A {
+    CALSLT(0x009F);
+}
+
+/**
+ * Displays a character.
+ * @type MAIN
+ * @param A Character code to output
+ */
+inline CHPUT(A) {
+    CALSLT(0x00A2);
+}
+
+/**
+ * Outputs a character to the printer.
+ * @type MAIN
+ * @param A Character code to output
+ * @return CY flag Set if failed
+ */
+inline LPTOUT(A) {
+    CALSLT(0x00A5);
+}
+
+/**
+ * Checks the status of the printer.
+ * @type MAIN
+ * @param A 255 Set Z flag if the printer is READY
+ *          0   Set Z flag if the printer is NOT READY
+ * @dispose AF
+ */
+inline LPTSTT() dispose AF {
+    CALSLT(0x00A8);
+}
+
+/**
+ * Check if it is a graphic header byte.
+ * @type MAIN
+ * @param A The character code to check
+ * @return CY flag is reset                   Not a graphic header
+ *         CY and Z flags are set            Graphic character code (converted code is stored in register A)
+ *         CY flag is set, Z flag is reset   Not a graphic character (original code remains in register A)
+ * @dispose AF
+ */
+inline CNVCHR(A) dispose AF {
+	CALSLT(0x00AB);
+}
+
+/**
+ * Store the input character codes in the buffer until the return key or stop key is typed.
+ * @type MAIN
+ * @return HL The starting address of the buffer - 1
+ *         CY flag is set only when terminated by the stop key
+ * @dispose AF, BC, DE, IX, IY
+ */
+inline PINLIN(): HL dispose AF, BC, DE, IX, IY {
+	CALSLT(0x00AE);
+}
+
+/**
+ * Same as PINLIN except when 【AUTFLG(0xF6AA)】 is set.
+ * @type MAIN
+ * @return HL The starting address of the buffer - 1
+ *         CY flag is set only when terminated by the stop key
+ * @dispose AF, BC, DE, IX, IY
+ */
+inline INLIN(): HL dispose AF, BC, DE, IX, IY {
+	CALSLT(0x00B1);
+}
+
+/**
+ * Display "?" and one space, then execute INLIN.
+ * @type MAIN
+ * @return HL The starting address of the buffer - 1
+ *         CY flag is set only when terminated by the stop key
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline QINLIN() dispose AF, BC, DE, HL, IX, IY {
+	CALSLT(0x00B4);
+}
+
+/**
+ * Check if CTRL+STOP key is pressed.
+ * Call this routine with interrupts disabled.
+ * @type MAIN
+ * @return CY flag is set if pressed
+ * @dispose AF
+ */
+inline BREAKX() dispose AF {
+	CALSLT(0x00B7);
+}
+
+/**
+ * Plays a beep sound.
+ * @type MAIN
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline BEEP() dispose AF, BC, DE, HL, IX, IY {
+    CALSLT(0x00C0);
+}
+
+/**
+ * Clears the screen.
+ * @type MAIN
+ * @dispose AF,BC,DE
+ */
+inline CLS() dispose AF,BC,DE {
+    CALSLT(0x00C3);
+}
+
+/**
+ * Moves the cursor.
+ * @type MAIN
+ * @param H X coordinate of the cursor
+ * @param L Y coordinate of the cursor
+ * @dispose AF
+ */
+inline POSIT() dispose AF {
+    CALSLT(0x00C6);
+}
+
+/**
+ * Checks if the function key display is active, and if so, displays it; otherwise, hides it.
+ * @type MAIN
+ * @param 【FNKFLG(0xFBCE)】 TODO: Insufficient explanation
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline FNKSB() dispose AF, BC, DE, HL, IX, IY {
+    CALSLT(0x00C9);
+}
+
+/**
+ * Hides the function key display.
+ * @type MAIN
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline ERAFNK() dispose AF, BC, DE, HL, IX, IY {
+    CALSLT(0x00CC);
+}
+
+/**
+ * Displays the function keys.
+ * @type MAIN
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline DSPFNK() dispose AF, BC, DE, HL, IX, IY {
+    CALSLT(0x00CF);
+}
+
+/**
+ * Forces the screen to be in text mode.
+ * @type MAIN
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline TOTEXT() dispose AF, BC, DE, HL, IX, IY {
+    CALSLT(0x00D2);
+}
+
+/**
+ * Check the state of the joystick or cursor keys.
+ * @type MAIN
+ * @param A The number of the joystick to check (0=cursor keys, 1-2=joystick)
+ * @return A The direction in which the joystick or cursor keys are pressed
+ *           0=not facing any direction
+ *           1=up, 2=up-right, 3=right, 4=down-right
+ *           5=down, 6=down-left, 7=left, 8=up-left
+ * @dispose BC, DE, HL, IX, IY
+ */
+inline GTSTCK(A): A dispose BC, DE, HL, IX, IY {
+	CALSLT(0x00D5);
+}
+
+/**
+ * Check the state of the trigger button.
+ * @type MAIN
+ * @param A The number of the trigger button to check (0=cursor keys, 1-2=joystick)
+ * @return A 0=trigger button is not pressed
+ *           FFH=trigger button is pressed
+ */
+inline GTTRIG(A): A {
+	CALSLT(0x00D8);
+}
+
+/**
+ * Checks the status of various input/output devices.
+ * @type MAIN
+ * @param A Device number to check
+ *          0-3   Touch panel 1
+ *          4-7   Touch panel 2
+ *          8-11  Light pen
+ *          12-15 Mouse 1 or trackball 1
+ *          16-19 Mouse 2 or trackball 2
+ * @return A
+ * @dispose BC, DE, HL, IX, IY
+ */
+inline GTPAD(A): A dispose BC, DE, HL, IX, IY {
+    CALSLT(0x00DB);
+}
+
+/**
+ * Check the state of the paddle.
+ * @type MAIN
+ * @param A Paddle number (1-12)
+ * @return A Paddle rotation angle (0-255)
+ * @dispose BC, DE, HL, IX, IY
+ */
+inline GTPDL(A): A dispose BC, DE, HL, IX, IY {
+	CALSLT(0x00DE);
+}
+
+/**
+ * Move the cassette recorder motor and read the tape header block.
+ * @type MAIN
+ * @return CY flag Set if failed
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline TAPION() dispose AF, BC, DE, HL, IX, IY {
+	CALSLT(0x00E1);
+}
+
+/**
+ * Read data from the tape.
+ * @type MAIN
+ * @return  A         Read value
+ *          CY flag  Set if failed
+ */
+inline TAPIN(): A {
+	CALSLT(0x00E4);
+}
+
+/**
+ * Stop reading from the tape.
+ * @type MAIN
+ * @return A Read value
+ */
+inline TAPIOF(): A {
+	CALSLT(0x00E7);
+}
+
+/**
+ * Move the cassette recorder motor and write the tape header block.
+ * @type MAIN
+ * @param A 0     Short header
+ *          Non-zero Long header
+ * @return CY flag Set if failed
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline TAPOON(A) dispose AF, BC, DE, HL, IX, IY {
+	CALSLT(0x00EA);
+}
+
+/**
+ * Write data to the tape.
+ * @type MAIN
+ * @param A Data
+ * @return CY flag Set if failed
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline TAPOUT(A) dispose AF, BC, DE, HL, IX, IY {
+	CALSLT(0x00ED);
+}
+
+/**
+ * Stop writing to the tape.
+ * @type MAIN
+ */
+inline TAPOOF() {
+	CALSLT(0x00F0);
+}
+
+/**
+ * Set the operation of the cassette recorder motor.
+ * @type MAIN
+ * @param A 0 Stop
+ *          1 Start
+ *          0xff Reverse the current operation
+ * @dispose AF
+ */
+inline STMOTR(A) dispose AF {
+	CALSLT(0x00F3);
+}
+
+/**
+ * Change the state of the CAPS lamp.
+ * @type MAIN
+ * @param A 0     Turn on the lamp
+ *          Non-zero Turn off the lamp
+ * @dispose AF
+ */
+inline CHGCAP(A) dispose AF {
+	CALSLT(0x0132);
+}
+
+/**
+ * Change the state of the 1-bit sound port.
+ * @type MAIN
+ * @param A 0     Turn off the sound port bit
+ *          Non-zero Turn on the sound port bit
+ * @dispose AF
+ */
+inline CHGSND(A) dispose AF {
+	CALSLT(0x0135);
+}
+
+/**
+ * Read the content of the basic slot selection register.
+ * @type MAIN
+ * @return A Read value
+ * @dispose A
+ */
+inline RSLREG() dispose A {
+	CALSLT(0x0138);
+}
+
+/**
+ * Write data to the basic slot selection register.
+ * @type MAIN
+ * @param A Value to write
+ */
+inline WSLREG(A) {
+	CALSLT(0x013B);
+}
+
+/**
+ * Read the status register of the VDP. This routine is for TMS9918.
+ * @type MAIN
+ * @return A
+ * @dispose A
+ */
+inline RDVDP(): A {
+	CALSLT(0x013E);
+}
+
+/**
+ * Read the value of the specified row from the keyboard matrix.
+ * @type MAIN
+ * @param A Specified row
+ * @return A Data (bit corresponding to the pressed key is set to 0)
+ * @dispose C
+ */
+inline SNSMAT(A): A dispose C {
+	CALSLT(0x0141);
+}
+
+/**
+ * Check if the device is operating.
+ * @type MAIN
+ * @return A 0     Operating
+ *           Non-zero Not operating
+ * @dispose AF
+ */
+inline ISFLIO() dispose AF {
+	CALSLT(0x014A);
+}
+
+/**
+ * Output a character to the printer. Different from LPTOUT(OOA5H) in the following points:
+ *   1. TAB is expanded to spaces.
+ *   2. For printers that are not MSX-compliant, convert hiragana to katakana and graphic characters to single-byte characters.
+ *   3. If failed, display "device I/O error".
+ * @type MAIN
+ * @param A Data
+ */
+inline OUTDLP(A) {
+	CALSLT(0x014D);
+}
+
+/**
+ * Clear the keyboard buffer.
+ * @type MAIN
+ * @dispose HL
+ */
+inline KILBUF() dispose HL {
+	CALSLT(0x0156);
+}
+
+/**
+ * Inter-slot call the routine in the BASIC interpreter.
+ * @type MAIN
+ * @param IX Address to call
+ */
+inline CALBAS(IX) {
+	CALSLT(0x0159);
+}
+
+/**
+ * Inter-slot call the SUB ROM.
+ * @type MAIN/MSX2
+ * @param IX Address to call. Also push the IX register onto the stack.
+ */
+inline SUBROM(IX) {
+	CALSLT(0x015C);
+}
+
+/**
+ * Inter-slot call the SUB ROM. IX register is not pushed onto the stack.
+ * @type MAIN/MSX2
+ * @param IX Address to call.
+ */
+inline EXTROM(IX) {
+	CALSLT(0x015F);
+}
+
+/**
+ * Delete until the end of the line.
+ * @type MAIN/MSX2
+ * @param H X coordinate
+ * @param L Y coordinate
+ * @dispose AF, BC, DE, HL, IX, IY
+ */
+inline EOL(H,L) dispose AF, BC, DE, HL, IX, IY {
+	CALSLT(0x0168);
+}
+
+/**
+ * Functionally the same as FILVRM(0056H/MAIN).
+ * The following points are different from FILVRM:
+ * FILVRM checks if the screen mode is 0-3, and if so,
+ * the VDP is treated as having only 16K bytes of VRAM.
+ * However, BIGFIL does not check the screen mode and operates as specified by the given parameters.
+ * @type MAIN/MSX2
+ * @param HL VRAM address to start writing
+ * @param BC Length of the area to write (in bytes)
+ * @param A  Value to write
+ * @dispose AF, BC
+ */
+inline BIGFIL(HL,BC,A) dispose AF, BC {
+	CALSLT(0x016B);
+}
+
+/**
+ * Set the address to the VDP and make the VRAM content readable.
+ * @type MAIN/MSX2
+ * @param HL VRAM address
+ * @dispose AF
+ */
+inline NSETRD(HL) dispose AF {
+	CALSLT(0x016E);
+}
+
+/**
+ * Set the address to the VDP and make the VRAM writable.
+ * @type MAIN/MSX2
+ * @param HL VRAM address
+ * @dispose AF
+ */
+inline NSTWRT(HL) dispose AF {
+	CALSLT(0x0171);
+}
+
+/**
+ * Read the content of VRAM.
+ * @type MAIN/MSX2
+ * @param HL VRAM address to read
+ * @return A Read value
+ */
+inline NRDVRM(HL): A {
+	CALSLT(0x0174);
+}
+
+/**
+ * Write data to VRAM.
+ * @type MAIN
+ * @param HL VRAM address to write
+ * @param A  Value to write
+ * @dispose AF
+ */
+inline NWRVRM(HL, A) dispose AF {
+	CALSLT(0x0177);
+}
+
+/**
+ * Read the content of the RESET port.
+ * @type MAIN
+ * @return A If MSB is 0, hard reset
+ */
+inline RDRES() {
+	CALSLT(0x017A);
+}
+
+/**
+ * Write a value to the RESET port. When simulating a hardware reset,
+ * set the MSB of the A register to 0, call this BIOS, and then jump to the O address of the BIOS.
+ * @type MAIN
+ * @param A Value to write
+ * @dispose A
+ */
+inline WRRES(A) dispose A {
+	CALSLT(0x017D);
+}

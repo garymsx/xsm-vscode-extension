@@ -1,0 +1,554 @@
+// I am referring to MSX Datapack and the following website:
+// http://ngs.no.coocan.jp/doc/wiki.cgi/TechHan?page=FrontPage
+// http://ngs.no.coocan.jp/doc/wiki.cgi/datapack
+// https://msxjpn.jimdofree.com/
+
+// MAIN-ROM system variables
+virtual(0x0002) byte LOGOBOT;
+virtual(0x0004) word CGTABL; // Base address of MSX character set in ROM
+virtual(0x0006) byte VDP_DR; // Address of port 0 when reading from VDP
+virtual(0x0007) byte VDP_DW; // Address of port 0 when writing to VDP
+virtual(0x002B) byte SYSINF1; // Character set, date format, and video signal type
+                              // bit 0-3: Character set (0000=Japanese, 0001=World, 010=Korean)
+                              // bit 4-6: Date format (000=Y-M-D, 001=M-D-Y, 010=D-M-Y)
+                              // bit 7: Video signal (0=60MHz, 1=50MHz)
+virtual(0x002C) byte SYSINF2; // Keyboard type and BASIC type
+                              // bit 0-3: Keyboard type (0000=Japanese, 0001=World, 0010=France AZERTY, 0011=UK, 0100=Germany DIN)
+                              // bit 4-6: BASIC type (0000=Japanese, 0001=World)
+virtual(0x002D) byte MSXVER; // MSX version (0=MSX1, 1=MSX2, 2=MSX2+, 3=MSX turbo R)
+virtual(0x002E) byte MIDINF; // MSX-MIDI
+                             // bit 0: MSX-MIDI (0=not present, 1=present, only valid for MSX turbo R)
+virtual(0x0034) byte[4] KNJBS1; // For Kanji BASIC, copied from KNJBS2 at BASIC startup
+
+virtual(0xF30F) byte[4] KNJBS2; // For Kanji BASIC, copied from KNJBS1 at BASIC startup
+
+
+// Disk BASIC related
+// Only valid when a disk is present.
+virtual(0xF323) word DISKVE; // Address of disk error processing routine
+virtual(0xF325) word BREAKV; // Address of CTRL+C processing routine
+virtual(0xF341) byte RAMAD0; // Page 0 RAM slot address
+virtual(0xF342) byte RAMAD1; // Page 1 RAM slot address
+virtual(0xF343) byte RAMAD2; // Page 2 RAM slot address
+virtual(0xF344) byte RAMAD3; // Page 3 RAM slot address
+virtual(0xF348) byte MASTERS; // Master cartridge slot address
+
+
+// Subroutines for reading, writing, and calling between slots
+virtual(0xF380) byte[5] RDPRIM; // Read from primary slot
+virtual(0xF385) byte[7] WRPRIM; // Write to primary slot
+virtual(0xF38C) byte[14] CLPRIM; // Call to primary slot
+
+
+// Starting addresses of USR machine language programs
+virtual(0xF39A) word[10] USRTAB; // Starting addresses of USR functions (0-9)
+                                // Initially points to FCERR (error routine) before definition
+
+// Text screen
+virtual(0xF3AE) byte LINL40; // WIDTH of SCREEN 0
+virtual(0xF3AF) byte LINL32; // WIDTH of SCREEN 1
+virtual(0xF3B0) byte LINLEN; // Current screen width (set by WIDTH)
+virtual(0xF3B1) byte CRTCNT; // Current screen height
+virtual(0xF3B2) byte CLMLST; // Used for control of PRINT statement, LINLEN-(LINLEN MOD 14) - 14
+
+
+// Initialization of SCREEN 0
+virtual(0xF3B3) word TXTNAM; // Pattern name table for SCREEN 0 (BASE(0))
+                            // Initial value: 0000H
+virtual(0xF3B5) word TXTCOL; // Unused (BASE(1))
+virtual(0xF3B7) word TXTCGP; // Pattern generator table for SCREEN 0 (BASE(2))
+                            // Initial value: 0800H
+virtual(0xF3B9) word TXTATR; // Unused (BASE(3))
+virtual(0xF3BB) word TXTPAT; // Unused (BASE(4))
+
+
+// Initialization of SCREEN 1
+virtual(0xF3BD) word T32NAM; // Pattern name table for SCREEN 1 (BASE(5))
+                            // Initial value: 1800H
+virtual(0xF3BF) word T32COL; // Color table for SCREEN 1 (BASE(6))
+                            // Initial value: 2000H
+virtual(0xF3C1) word T32CGP; // Pattern generator table for SCREEN 1 (BASE(7))
+                            // Initial value: 0000H
+virtual(0xF3C3) word T32ATR; // Sprite attribute table for SCREEN 1 (BASE(8))
+                            // Initial value: 1B00H
+virtual(0xF3C5) word T32PAT; // Sprite generator table for SCREEN 1 (BASE(9))
+                            // Initial value: 3800H
+
+
+// Initialization of SCREEN 2
+virtual(0xF3C7) word GRPNAM; // Pattern name table for SCREEN 2 (BASE(10))
+                            // Initial value: 1800H
+virtual(0xF3C9) word GRPCOL; // Color table for SCREEN 2 (BASE(11))
+                            // Initial value: 2000H
+virtual(0xF3CB) word GRPCGP; // Pattern generator table for SCREEN 2 (BASE(12))
+                            // Initial value: 0000H
+virtual(0xF3CD) word GRPATR; // Sprite attribute table for SCREEN 2 (BASE(13))
+                            // Initial value: 1B00H
+virtual(0xF3CF) word GRPPAT; // Sprite generator table for SCREEN 2 (BASE(14))
+                            // Initial value: 3800H
+
+
+// Initialization of SCREEN 3
+virtual(0xF3D1) word MLTNAM; // Pattern name table for SCREEN 3 (BASE(15))
+                            // Initial value: 0800H
+virtual(0xF3D3) word MLTCOL; // Unused (BASE(16))
+virtual(0xF3D5) word MLTCGP; // Pattern generator table for SCREEN 3 (BASE(17))
+                            // Initial value: 0000H
+virtual(0xF3D7) word MLTATR; // Sprite attribute table for SCREEN 3 (BASE(18))
+                            // Initial value: 1B00H
+virtual(0xF3D9) word MLTPAT; // Sprite generator table for SCREEN 3 (BASE(19))
+                            // Initial value: 380
+
+// Other screen settings
+virtual(0xF3DB) byte         CLIKSW;          // Key click 0=OFF 0≠ON Initial value 1 (set by SCREEN)
+virtual(0xF3DC) byte         CSRY;            // Cursor Y coordinate The top is 1
+virtual(0xF3DD) byte         CSRX;            // Cursor X coordinate The leftmost is 1
+virtual(0xF3DE) byte         CNSDFG;          // Function display 0=ON 0≠OFF
+
+
+// VDP registers
+virtual(0xF3DF) byte         RG0SAV;          // Value of VDP register #0 (VDP(0))
+virtual(0xF3E0) byte         RG1SAV;          // Value of VDP register #1 (VDP(1))
+virtual(0xF3E1) byte         RG2SAV;          // Value of VDP register #2 (VDP(2))
+virtual(0xF3E2) byte         RG3SAV;          // Value of VDP register #3 (VDP(3))
+virtual(0xF3E3) byte         RG4SAV;          // Value of VDP register #4 (VDP(4))
+virtual(0xF3E4) byte         RG5SAV;          // Value of VDP register #5 (VDP(5))
+virtual(0xF3E5) byte         RG6SAV;          // Value of VDP register #6 (VDP(6))
+virtual(0xF3E6) byte         RG7SAV;          // Value of VDP register #7 (VDP(7))
+virtual(0xF3E7) byte         STATFL;          // Value of VDP status (VDP(8))
+                                             // For MSX2 and later, it is the value of VDP status register 0
+virtual(0xF3E8) byte         TRGFLG;          // Joystick trigger state
+                                             // 0=pressed 1=not pressed bit 0=SPACE key
+                                             // bit 4=Port 1 A button bit 5=Port 1 B button
+                                             // bit 6=Port 2 A button bit 7=Port 2 B button
+virtual(0xF3E9) byte         FORCLR;          // Foreground color (set by COLOR)
+virtual(0xF3EA) byte         BAKCLR;          // Background color (set by COLOR)
+virtual(0xF3EB) byte         BDRCLR;          // Border color (set by COLOR)
+virtual(0xF3EC) byte[3]      MAXUPD;          // Used by CIRCLE
+virtual(0xF3EF) byte[3]      MINUPD;          // Used by CIRCLE
+virtual(0xF3F2) byte         ATRBYT;          // COLOR code of graphics
+
+
+// WORK AREA FOR PLAY
+virtual(0xF3F3) word         QUEUES;          // Queue table (used by PLAY)
+virtual(0xF3F5) byte         FRCNEW;          // Flag for CLOAD 0=CLOAD FFH=CLOAD?
+
+
+// WORK AREA FOR KEY INPUT
+virtual(0xF3F6) byte         SCNCNT;          // Key scan time interval
+virtual(0xF3F7) byte         REPCNT;          // Auto repeat start time
+virtual(0xF3F8) word         PUTPNT;          // Write address of key buffer
+virtual(0xF3FA) word         GETPNT;          // Read address of key buffer
+
+
+// Parameters for cassette
+virtual(0xF3FC) byte[5]      CS120;           // Value for 1200 baud
+virtual(0xF401) byte[5]      CS240;           // Value for 2400 baud
+virtual(0xF406) word         LOW;             // Current baud rate bit 0 (set by SCREEN)
+virtual(0xF408) word         HIGH;            // Current baud rate bit 1 (set by SCREEN)
+virtual(0xF40A) byte         HEADER;          // Current baud rate header set (set by SCREEN)
+virtual(0xF40B) word         ASPCT1;          // 256/aspect ratio (set by SCREEN, used by CIRCLE)
+virtual(0xF40D) word         ASPCT2;          // 256*aspect ratio (set by SCREEN, used by CIRCLE)
+virtual(0xF40F) byte[5]      ENDPRG;          // End of program (used by RESUME NEXT)
+
+
+// Used internally by BASIC
+virtual(0xF414) byte         ERRFLG;          // Error code
+virtual(0xF415) byte         LPTPOS;          // Printer head position
+virtual(0xF416) byte         PRTFLG;          // Output to printer
+virtual(0xF417) byte         NTMSXP;          // Printer type 0=for MSX 0≠for non-MSX general use
+virtual(0xF418) byte         RAWPRT;          // 0 to convert codes and output to printer
+virtual(0xF419) word         VLZADR;          // Address of characters replaced by VAL
+virtual(0xF41B) byte         VLZDAT;          // Character replaced by 0 in VAL
+virtual(0xF41C) word         CURLIN;          // Line number currently being executed in BASIC
+virtual(0xF41F) byte[318]    KBUF;            // Crunch buffer
+                                             // Converted from BUF (F55EH) to intermediate language
+virtual(0xF55D) byte         BUFMIN;          // "," (used by INPUT)
+virtual(0xF55E) byte[258]    BUF;             // Buffer to store input characters as codes
+virtual(0xF660) byte         ENDBUF;          // End code of buffer
+virtual(0xF661) byte         TTYPOS;          // Virtual cursor position
+virtual(0xF662) byte         DIMFLG;          // Flag to distinguish array variables from simple variables
+virtual(0xF663) byte         VALTYP;          // Type of variable
+virtual(0xF664) byte         OPRTYP;          // Save operator or flag for crunch
+virtual(0xF665) byte         DONUM;           // Flag for crunch
+virtual(0xF666) word         CONTXT;          // Save text pointer (used by CHRGET)
+virtual(0xF668) byte         CONSAV;          // Save constant token (used by CHRGET)
+virtual(0xF669) byte         CONTYP;          // Type of saved constant
+virtual(0xF66A) byte[8]      CONLO;           // Value of saved constant
+virtual(0xF672) word         MEMSIZ;          // Highest address of memory used by BASIC
+virtual(0xF674) word         STKTOP;          // Highest address where stack can be used (set by CLEAR)
+virtual(0xF676) word         TXTTAB;          // Starting address of BASIC text area
+virtual(0xF678) word         TEMPPT;          // Temporary descriptor starting address of free area
+virtual(0xF67A) byte[30]     TEMPST;          // Area of NUMTEMP
+virtual(0xF698) byte[3]      DSCTMP;          // String functions
+virtual(0xF69B) word         FRETOP;          // Starting address of free area for string area
+virtual(0xF69D) word         TEMP3;           // Used by garbage collection or USR
+virtual(0xF69F) word         TEMP8;           // Used by garbage collection
+virtual(0xF6A1) word         ENDFOR;          // Next address of FOR
+virtual(0xF6A3) word         DATLIN;          // Line number of DATA
+virtual(0xF6A5) byte         SUBFLG;          // Flag when using array
+virtual(0xF6A6) byte         FLGINP;          // Flag (used by INPUT and READ)
+virtual(0xF6A7) word         TEMP;            // Temporary storage for statement code
+virtual(0xF6A9) byte         PTRFLG;          // Line number to convert
+virtual(0xF6AA) byte         AUTFLG;          // Non-zero if AUTO is enabled
+virtual(0xF6AB) word         AUTLIN;          // Most recent line number entered with AUTO
+virtual(0xF6AD) word         AUTINC;          // Increment of AUTO line number
+virtual(0xF6AF) word         SAVTXT;          // Text address for RESUME return
+virtual(0xF6B1) word         SAVSTK;          // Save error recovery routine
+virtual(0xF6B3) word         ERRLIN;          // Error line number
+virtual(0xF6B5) word         DOT;             // Current line
+virtual(0xF6B7) word         ERRTXT;          // Error line number
+virtual(0xF6B9) word         ONELIN;          // Jump line number when error occurs
+virtual(0xF6BB) byte         ONEFLG;          // 1 while executing error interrupt routine
+virtual(0xF6BC) word         TEMP2;           // Temporary storage
+virtual(0xF6BE) word         OLDLIN;          // Previous line number of CTRL+STOP, END, STOP
+virtual(0xF6C0) word         OLDTXT;          // Address of next text to execute
+virtual(0xF6C2) word         VARTAB;          // Starting address of simple variables
+virtual(0xF6C4) word         ARYTAB;          // Starting address of array table
+virtual(0xF6C6) word         STREND;          // Last address of memory used by BASIC for text, etc.
+virtual(0xF6C8) word         DATPTR;          // Text address of data read by READ
+virtual(0xF6CA) byte[26]     DEFTBL;          // Default type of variables
+
+
+virtual(0xF6E4) word         PRMSTK;          // Previous definition block on stack for garbage collection
+virtual(0xF6E6) word         PRMLEN;          // Length of target table for processing
+virtual(0xF6E8) byte[100]    PARM1;           // Processing parameter definition table set by PRMSIZ
+virtual(0xF74C) word         PRMPRV;          // Pointer to previous parameter block before PRMSTK, used by garbage collection
+virtual(0xF74E) word         PRMLN2;          // Size of parameter block
+virtual(0xF750) byte[100]    PARM2;           // Storage location for parameters set by PRMSIZ
+virtual(0xF7B4) byte         PRMFLG;          // Flag to indicate if PARM1 has been searched
+virtual(0xF7B5) word         ARYTA2;          // End point of search
+virtual(0xF7B7) byte         NOFUNS;          // 0 if no processing target functions
+virtual(0xF7B8) word         TEMP9;           // Used by garbage collection
+virtual(0xF7BA) word         FUNACT;          // Number of processing target functions
+virtual(0xF7BC) byte[8]      SWPTMP;          // Temporary storage for SWAP values
+virtual(0xF7C4) byte         TRCFLG;          // TRACE ON・OFF
+
+
+// Used by Math-Pack
+virtual(0xF7C5) byte[43]     FBUFFR;          // Temporary storage location for Math-Pack
+virtual(0xF7F0) word         DECTMP;          // Used for decimal to floating-point conversion
+virtual(0xF7F2) word         DECTM2;          // Used for division
+virtual(0xF7F4) byte         DECCNT;          // Used for division
+virtual(0xF7F6) byte[16]     DAC;             // Values to be operated on
+virtual(0xF806) byte[48]     HOLD8;           // Register save for decimal multiplication
+virtual(0xF836) byte[8]      HOLD2;           // Used internally by Math-Pack
+virtual(0xF83E) byte[8]      HOLD;            // Used internally by Math-Pack
+virtual(0xF847) byte[16]     ARG;             // Values to be operated on with DAC
+virtual(0xF857) byte[8]      RNDX;            // Last used random number (set by RND)
+
+
+// Data area for BASIC interpreter
+virtual(0xF85F) byte         MAXFIL;          // Maximum file number (set by MAXFILES)
+virtual(0xF860) word         FILTAB;          // Starting address of file data
+virtual(0xF862) word         NULBUF;          // Buffer pointer (used by SAVE and LOAD)
+virtual(0xF864) word         PTRFIL;          // Position of specified file's file data
+virtual(0xF866) byte[11]     FILNAM;          // Saved file name
+virtual(0xF871) byte[11]     FILNM2;          // Saved file name
+virtual(0xF87C) byte         NLONLY;          // 0≠Program is loaded
+virtual(0xF87D) word         SAVEND;          // Last address of machine language program (used by BSAVE)
+virtual(0xF87F) byte[160]    FNKSTR;          // Function key setting string (set by KEY, etc.)
+virtual(0xF91F) byte[3]      CGPNT;           // Slot and address where font is stored in ROM
+virtual(0xF922) word         NAMBAS;          // Current pattern name table base address
+virtual(0xF924) word         CGPBAS;          // Current pattern generator table base address
+virtual(0xF926) word         PATBAS;          // Current sprite generator table base address
+virtual(0xF928) word         ATRBAS;          // Current sprite attribute table base address
+virtual(0xF92A) word         CLOC;            // Used internally by graphic routines
+virtual(0xF92C) byte         CMASK;           // Used internally by graphic routines
+virtual(0xF92D) word         MINDEL;          // Used internally by graphic routines
+virtual(0xF92F) word         MAXDEL;          // Used internally by graphic routines
+
+
+// Data area for CIRCLE
+virtual(0xF931) word         ASPECT;          // Aspect ratio of circle
+virtual(0xF933) word         CENCNT;          // Used by CIRCLE
+virtual(0xF935) byte         CLINEF;          // Flag for drawing lines towards the center
+virtual(0xF936) word         CNPNTS;          // Points to draw lines
+virtual(0xF938) byte         CPLOTF;          // Used by CIRCLE
+virtual(0xF939) word         CPCNT;           // Number of circle ÷ 8
+virtual(0xF93B) word         CPNCNT8;         // Used by CIRCLE
+virtual(0xF93D) word         CPCSUM;          // Used by CIRCLE
+virtual(0xF93F) word         CSTCNT;          // Used by CIRCLE
+virtual(0xF941) byte         CSCLXY;          // Scale of x and y
+virtual(0xF942) word         CSAVEA;          // Reserved area of ADVGRP
+virtual(0xF944) byte         CSAVEM;          // Reserved area of ADVGRP
+virtual(0xF945) word         CXOFF;           // x offset value from the center
+virtual(0xF947) word         CYOFF;           // y offset value from the center
+
+
+// Data area for PAword
+virtual(0xF949) byte         LOHMSK;          // Used by PAword
+virtual(0xF94A) byte         LOHDIR;          // Used by PAword
+virtual(0xF94B) word         LOHADR;          // Used by PAword
+virtual(0xF94D) word         LOHCNT;          // Used by PAword
+virtual(0xF94F) word         SKPCNT;          // Skip count
+virtual(0xF951) word         MIVCNT;          // Operation count
+virtual(0xF953) byte         PDIREC;          // Direction of line drawing
+virtual(0xF954) byte         LFPROG;          // Used by PAword
+virtual(0xF955) byte         RTPROG;          // Used by PAword
+
+
+// Data area for PLAY
+virtual(0xF956) word         MCLTAB;          // Start of macro table (used by PLAY and DRAW)
+virtual(0xF958) byte         MCLFLG;          // Used by PLAY and DRAW
+virtual(0xF959) byte[24]     QUETAB;          // Queue table, 4 queues × 6 bytes
+virtual(0xF971) byte[4]      QUEBAK;          // Used by BCKQ
+virtual(0xF975) byte[128]    VOICAQ;          // Queue for voice 1
+virtual(0xF9F5) byte[128]    VOICBQ;          // Queue for voice 2
+virtual(0xFA75) byte[128]    VOICCQ;          // Queue for voice 3
+
+// Additional area added in MSX2
+virtual(0xFAF5) byte         DPPAGE;          // Display page number
+virtual(0xFAF6) byte         ACPAGE;          // Active page number
+virtual(0xFAF7) byte         AVCSAV;          // Save AV control port
+virtual(0xFAF8) byte         EXBRSA;          // SUB-ROM slot address
+virtual(0xFAF9) byte         CHRCNT;          // Character count for roman-kana conversion
+virtual(0xFAFA) word         ROMA;            // Input character buffer for roman-kana conversion
+virtual(0xFAFC) byte         MODE;            // Roman-kana conversion mode, VRAM size
+                                             // bit1-2 VRAM size 00=16k 01=64k 10=128k
+                                             // bit3 VRAM 4000H mask 1=enabled 0=disabled
+virtual(0xFAFD) byte         NORUSE;          // Kanji driver usage
+virtual(0xFAFE) word         XSAVE;           // Light pen bit0-7 X coordinate bit15=1 when interrupted
+virtual(0xFAFF) byte         XOFFS;           // Light pen X coordinate calibration offset value
+virtual(0xFB00) word         YSAVE;           // Light pen bit0-7 Y coordinate
+virtual(0xFB01) byte         YOFFS;           // Light pen Y coordinate calibration offset value
+virtual(0xFB02) byte         LOGOPR;          // Logical operation code
+
+// RS-232C data area
+virtual(0xFB03) byte         TOCNT;           // RS-232C usage
+virtual(0xFB04) word         RSFCB;           // RS-232C address
+virtual(0xFB06) byte[5]      RSIQLN;          // RS-232C usage
+virtual(0xFB07) byte[5]      MEXBIH;          // Slot call
+virtual(0xFB0C) byte[5]      OLDSTT;          // Slot call
+virtual(0xFB11) byte[5]      OLDINT;          // Slot call
+virtual(0xFB16) byte         DEVNUM;          // RS-232C usage
+virtual(0xFB17) byte[3]      DATCNT;          // RS-232C usage
+virtual(0xFB1A) byte         ERRORS;          // RS-232C usage
+virtual(0xFB1B) byte         FLAGS;           // RS-232C usage
+virtual(0xFB1C) byte         ESTBLS;          // RS-232C usage
+virtual(0xFB1D) byte         COMMSK;          // RS-232C usage
+virtual(0xFB1E) byte         LSTCOM;          // RS-232C usage
+virtual(0xFB1F) byte         LSTMOD;          // RS-232C usage
+virtual(0xFB20) byte         HOKVLD;          // Presence of extended BIOS
+
+// MSX-DOS data area
+virtual(0xFB21) byte[8]      DRVTBL;          // Slot address of disk ROM, etc.
+virtual(0xFB29) byte[11]     DRVINT;          // MSX-DOS usage
+
+// PLAY data area
+virtual(0xFB35) byte         PRSCNT;          // bit0-1 String pulse bit7=0 1 pass
+virtual(0xFB36) word         SAVSP;           // Save pointer (used by PLAY)
+virtual(0xFB38) byte         VOICEN;          // Current voice
+virtual(0xFB39) word         SAVVOL;          // Save volume during pause
+virtual(0xFB3B) byte         MCLLEN;          // PLAY usage
+virtual(0xFB3C) byte         MCLPTR;          // PLAY usage
+virtual(0xFB3E) byte         QUEUEN;          // PLAY usage
+virtual(0xFC3F) byte         MUSICF;          // Flag during music playback
+virtual(0xFB40) byte         PLYCNT;          // Number of entries in the queue
+
+// Voice data
+virtual(0xFB41) byte[37]     VCBA;            // Voice 0 data
+virtual(0xFB66) byte[37]     VCBB;            // Voice 1 data
+virtual(0xFB8B) byte[37]     VCBC;            // Voice 2 data
+
+// Data area
+virtual(0xFBB0) byte         ENSTOP;          // [SHIFT]+[CTRL]+[かな] warm start 0=disabled 0≠enabled
+virtual(0xFBB1) byte         BASROM;          // Location of BASIC text 0=RAM or ROM
+virtual(0xFBB2) byte[24]     LINTTB;          // Line terminal table, saves information for each line on the screen
+virtual(0xFBCA) word         FSTPOS;          // Starting position of the line (used by INLIN (00B1H))
+virtual(0xFBCC) byte         CODSAV;          // Save the character overlapped by the cursor
+virtual(0xFBCD) byte         FNKSWI;          // Key displayed by KEY ON 1=F1-F5 0=F6-F10
+virtual(0xFBCE) byte[10]     FNKFLG;          // Status of ON KEY GOSUB
+virtual(0xFBD8) byte         ONGSBF;          // Wait event occurrence confirmation flag of TRPTBL (FC4CH)
+virtual(0xFBD9) byte         CLIKFL;          // Key click flag
+virtual(0xFBDA) byte[11]     OLDKEY;          // Status of the key matrix (old)
+virtual(0xFBE5) byte[11]     NEWKEY;          // Status of the key matrix (new)
+virtual(0xFBF0) byte[40]     KEYBUF;          // Key code buffer
+virtual(0xFC18) byte[40]     LINWRK;          // Used by screen handler
+virtual(0xFC40) byte[8]      PATWRK;          // Used by pattern converter
+virtual(0xFC48) word         BOTTOM;          // Start address of installed RAM
+virtual(0xFC4A) word         HIMEM;           // Maximum address of available memory (set by CLEAR)
+virtual(0xFC4C) byte[78]     TRPTBL;          // Status of ON GOTO-GOSUB
+virtual(0xFC9A) byte         RTYCNT;          // Used by BASIC
+virtual(0xFC9B) byte         INTFLG;          // Behavior when [CTRL]+[STOP] is pressed 03H=stop
+virtual(0xFC9C) byte         PADY;            // Y coordinate of the paddle
+virtual(0xFC9D) byte         PADX;            // X coordinate of the paddle
+virtual(0xFC9E) word         JIFFY;           // Value of TIME (used by PLAY)
+virtual(0xFCA0) word         INTVAL;          // Interval of ON INTERVAL GOSUB
+virtual(0xFCA2) word         INTCNT;          // Count of ON INTERVAL GOSUB
+virtual(0xFCA4) byte         LOWLIM;          // Used for cassette tape reading
+virtual(0xFCA5) byte         WINWID;          // Used for cassette tape reading
+virtual(0xFCA6) byte         GRPHED;          // Sending graphic characters 1=graphic characters 0=normal characters
+virtual(0xFCA7) byte         ESCCNT;          // Count of escape sequence (ESC) codes
+virtual(0xFCA8) byte         INSFLG;          // Insert mode 0=overwrite 1=insert
+virtual(0xFCA9) byte         CSRSW;           // Cursor switch 0=hidden 0≠visible (set by LOCATE)
+virtual(0xFCAA) byte         CSTYLE;          // Cursor shape 0=█ 0≠▄
+virtual(0xFCAB) byte         CAPST;           // Status of CAPS key 0=OFF 1=ON
+virtual(0xFCAC) byte         KANAST;          // Status of kana key 0=OFF 1=ON
+virtual(0xFCAD) byte         KANAMD;          // Kana array 0=50 sound array non-zero=JIS array
+virtual(0xFCAE) byte         FLBMEM;          // 0=BASIC program is loaded
+virtual(0xFCAF) byte         SCRMOD;          // Screen mode number (set by SCREEN)
+virtual(0xFCB0) byte         OLDSCR;          // Reserved area for screen mode
+virtual(0xFCB1) byte         CASPRV;          // Character reserved area (used by CAS:)
+virtual(0xFCB2) byte         BRDATR;          // Boundary color (set by PAINT)
+virtual(0xFCB3) word         GXPOS;           // X coordinate
+virtual(0xFCB5) word         GYPOS;           // Y coordinate
+virtual(0xFCB7) word         GRPACX;          // Graphic accumulator X coordinate
+virtual(0xFCB9) word         GRPACY;          // Graphic accumulator Y coordinate
+virtual(0xFCBB) byte         DRWFLG;          // Flag (used by DRAW)
+virtual(0xFCBC) byte         DRWSCL;          // Magnification 0=not drawing 0≠drawing (used by DRAW)
+virtual(0xFCBD) byte         DRWANG;          // Angle (used by DRAW)
+virtual(0xFCBE) byte         RUNBNF;          // Flag indicating whether BLOAD/BSAVE is in progress
+virtual(0xFCBF) word         SAVENT;          // Start address (used by BSAVE)
+virtual(0xFCC1) byte[4]      EXPTBL;          // Flag table for extended slots
+virtual(0xFCC5) byte[4]      SLTTBL;          // Current slot selection status for each extended slot register
+virtual(0xFCC9) byte         SLTATR;          // Reserved attribute for each slot
+virtual(0xFD09) byte[128]    SLTWRK;          // Specific work area assigned to each slot
+virtual(0xFD89) byte[16]     PROCNM;          // Expanded name (after CALL) or extended device (after OPEN)
+virtual(0xFD99) byte         DEVICE;          // Cartridge device usage
+
+// Hook, if changed, the original hook must be called
+virtual(0xFD9A) byte[5]      H_KEYI;          // Start of MSXIO interrupt processing
+                                             // (Add interrupt processing for RS-232C, etc.)
+virtual(0xFD9F) byte[5]      H_TIMI;          // MSXIO timer interrupt processing (Add timer interrupt processing)
+virtual(0xFDA4) byte[5]      H_CHPH;          // Start of MSXIO CHPUT (output 1 character)
+virtual(0xFDA9) byte[5]      H_DSPC;          // Start of MSXIO DSPCSR (cursor display)
+virtual(0xFDAE) byte[5]      H_ERAC;          // Start of MSXIO ERACSR (erase cursor)
+virtual(0xFDB3) byte[5]      H_DSPF;          // Start of MSXIO DSPFNK (function key display)
+virtual(0xFDB8) byte[5]      H_ERAF;          // Start of MSXIO ERAFNK (erase function key)
+virtual(0xFDBD) byte[5]      H_TOTE;          // Start of MSXIO TOTEXT (set text mode SCREEN)
+virtual(0xFDC2) byte[5]      H_CHGE;          // Start of MSXIO CHGET (get 1 character)
+virtual(0xFDC7) byte[5]      H_INIP;          // Start of MSXIO INIPAT (initialize character palette)
+virtual(0xFDCC) byte[5]      H_KEYC;          // Start of MSXIO KEYCOD (key code conversion)
+virtual(0xFDD1) byte[5]      H_KYEA;          // Start of MSXIO NMI routine (Key Easy)
+virtual(0xFDD6) byte[5]      H_NMI;           // Start of MSXIO NMI (non-maskable interrupt)
+virtual(0xFDDB) byte[5]      H_PINL;          // Start of MSXIO PINLIN (input 1 line)
+virtual(0xFDE0) byte[5]      H_QINL;          // Start of MSXINL QINLIN (display "? " and input 1 line)
+virtual(0xFDE5) byte[5]      H_INLI;          // Start of MSXINL INLIN (input 1 line)
+virtual(0xFDEA) byte[5]      H_ONGO;          // Start of MSXSTS INGOTP (ON GOTO)
+virtual(0xFDEF) byte[5]      H_DSKO;          // Start of MSXSTS DSKO$ (disk output)
+virtual(0xFDF4) byte[5]      H_SETS;          // Start of MSXSTS SETS (set attribute)
+virtual(0xFDF9) byte[5]      H_NAME;          // Start of MSXSTS NAME (change file name)
+virtual(0xFDFE) byte[5]      H_KILL;          // Start of MSXSTS KILL (delete file)
+virtual(0xFE03) byte[5]      H_IPL;           // Start of MSXSTS IPL (initialize program load)
+virtual(0xFE08) byte[5]      H_COPY;          // Start of MSXSTS COPY (copy file)
+virtual(0xFE0D) byte[5]      H_CMD;           // Start of MSXSTS CMD (extended command)
+virtual(0xFE12) byte[5]      H_DSKF;          // Start of MSXSTS DSKF (get free space of disk)
+virtual(0xFE17) byte[5]      H_DSKI;          // Start of MSXSTS DSKI (disk input)
+virtual(0xFE1C) byte[5]      H_ATTR;          // Start of MSXSTS ATTR$ (attribute)
+virtual(0xFE21) byte[5]      H_LSET;          // Start of MSXSTS LSET (left align value)
+virtual(0xFE26) byte[5]      H_RSET;          // Start of MSXSTS RSET (right align value)
+virtual(0xFE2B) byte[5]      H_FIEL;          // Start of MSXSTS FIELD (allocate random file area)
+virtual(0xFE30) byte[5]      H_MKI;           // Start of MSXSTS MKI$ (generate integer type)
+virtual(0xFE35) byte[5]      H_MKS;           // Start of MSXSTS MKS$ (generate single precision real number type)
+virtual(0xFE3A) byte[5]      H_MKD;           // Start of MSXSTS MKD$ (generate double precision real number type)
+virtual(0xFE3F) byte[5]      H_CVI;           // Start of MSXSTS CVI (convert to integer type)
+virtual(0xFE44) byte[5]      H_CVS;           // Start of MSXSTS CVS (convert to single precision real number type)
+virtual(0xFE49) byte[5]      H_CVD;           // Start of MSXSTS CVD (convert to double precision variable type)
+virtual(0xFE4E) byte[5]      H_GETP;          // Start of SPDSK GETPTR (get file pointer)
+virtual(0xFE53) byte[5]      H_SETF;          // Start of SPCDSK SETFIL (set file pointer)
+virtual(0xFE58) byte[5]      H_NOFO;          // Start of SPDSK NOFOR (OPEN without FOR)
+virtual(0xFE5D) byte[5]      H_NULO;          // Start of SPCDSK NULOPN (OPEN without using file)
+virtual(0xFE62) byte[5]      H_NTFL;          // Start of SPCDSK NTFLO (processing other than file number 0)
+virtual(0xFE67) byte[5]      H_MERG;          // Start of SPCDSK MERGE (merge program files)
+virtual(0xFE6C) byte[5]      H_SAVE;          // Start of SPCDSK SAVE (save)
+virtual(0xFE71) byte[5]      H_BINS;          // Start of SPCDSK BINSAV (binary save)
+virtual(0xFE76) byte[5]      H_BINL;          // Start of SPCDSK BINLOD (binary load)
+virtual(0xFD7B) byte[5]      H_FILE;          // Start of SPCDSK FILES (list file names)
+virtual(0xFE80) byte[5]      H_DGET;          // Start of SPCDSK DGET (GET from disk)
+virtual(0xFE85) byte[5]      H_FILO;          // Start of SPCDSK FILOU1 (file output)
+virtual(0xFE8A) byte[5]      H_INDS;          // Start of SPCDSK INDSKC (input file attributes)
+virtual(0xFE8F) byte[5]      H_RSLF;          // Start of selecting the previous drive
+virtual(0xFE94) byte[5]      H_SAVD;          // Start of saving the current drive
+virtual(0xFE99) byte[5]      H_LOC;           // Start of SPCDSK LOC (get file position)
+virtual(0xFE9E) byte[5]      H_LOF;           // Start of SPCDSK LOF (get file size)
+virtual(0xFEA3) byte[5]      H_EOF;           // Start of SPCDSK EOF (check end of file)
+virtual(0xFEA8) byte[5]      H_FPOS;          // Start of SPCDSK FPOS (file location)
+virtual(0xFEAD) byte[5]      H_BAKU;          // Start of SPCDSK BAKUPT (backup)
+virtual(0xFEB2) byte[5]      H_PARD;          // Start of SPCDEV PARDEV (get peripheral device name)
+virtual(0xFEB7) byte[5]      H_NODE;          // Start of SPCDEV NODEVN (no drive)
+virtual(0xFEBC) byte[5]      H_POSD;          // Start of SPCDEV POSDSK
+virtual(0xFEC1) byte[5]      H_DEVN;          // Start of SPCDEV DEVNAM (process drive name)
+virtual(0xFEC6) byte[5]      H_GEND;          // Start of SPCDEV GENDSP
+virtual(0xFECB) byte[5]      H_RUNC;          // Start of BIMISC RUNC (clear processing of RUN)
+virtual(0xFED0) byte[5]      H_CLEA;          // Start of BIMISC CLEARC (clear processing of CLEAR)
+virtual(0xFED5) byte[5]      H_LOPD;          // Start of BIMISC LOPDFT (set loop/default value)
+virtual(0xFEDA) byte[5]      H_STKE;          // Start of BIMISC STKERR (stack error)
+virtual(0xFEDF) byte[5]      H_ISFL;          // Start of BIMISC ISFLIO (check file input/output)
+virtual(0xFEE4) byte[5]      H_OUTD;          // Start of BIO OUTDO (execute OUT)
+virtual(0xFEE9) byte[5]      H_CRDO;          // Start of BIO CRDO (execute CRLF)
+virtual(0xFEEE) byte[5]      H_DSKC;          // Start of BIO DSKCHI (input disk attributes)
+virtual(0xFEF3) byte[5]      H_DOGR;          // Start of GENGRP DOGRPH (execute graphic processing)
+virtual(0xFEF8) byte[5]      H_PRGE;          // Start of BINTRP PRGEND (end of program)
+virtual(0xFEFD) byte[5]      H_ERRP;          // Start of BINTRP ERRPTR (error display)
+virtual(0xFF02) byte[5]      H_ERRF;          // BINTRP
+virtual(0xFF07) byte[5]      H_READ;          // BINTRP READY
+virtual(0xFF0C) byte[5]      H_MAIN;          // BINTRP MAIN
+virtual(0xFF11) byte[5]      H_DIRD;          // Start of BINTRP DIRDO (execute direct statement)
+virtual(0xFF16) byte[5]      H_FINI;          // BINTRP
+virtual(0xFF1B) byte[5]      H_FINE;          // BINTRP
+virtual(0xFF20) byte[5]      H_CRUN;          // BINTRP
+virtual(0xFF25) byte[5]      H_CRUS;          // BINTRP
+virtual(0xFF2A) byte[5]      H_ISRE;          // BINTRP
+virtual(0xFF2F) byte[5]      H_NTFN;          // BINTRP
+virtual(0xFF34) byte[5]      H_NOTR;          // BINTRP
+virtual(0xFF39) byte[5]      H_SNGF;          // BINTRP
+virtual(0xFF3E) byte[5]      H_NEWS;          // BINTRP
+virtual(0xFF43) byte[5]      H_GONE;          // BINTRP
+virtual(0xFF48) byte[5]      H_CHRG;          // BINTRP
+virtual(0xFF4D) byte[5]      H_RETU;          // BINTRP
+virtual(0xFF52) byte[5]      H_PRTF;          // BINTRP
+virtual(0xFF57) byte[5]      H_COMP;          // BINTRP
+virtual(0xFF5C) byte[5]      H_FINP;          // BINTRP
+virtual(0xFF61) byte[5]      H_TRNM;          // BINTRP
+virtual(0xFF66) byte[5]      H_FRME;          // BINTRP
+virtual(0xFF6B) byte[5]      H_NTPL;          // BINTRP
+virtual(0xFF70) byte[5]      H_EVAL;          // BINTRP
+virtual(0xFF75) byte[5]      H_ONKO;          // BINTRP
+virtual(0xFF7A) byte[5]      H_FING;          // BINTRP
+virtual(0xFF7F) byte[5]      H_ISMI;          // BINTRP ISMID$ (check MID$)
+virtual(0xFF84) byte[5]      H_WIDT;          // BINTRP WIDTHS (WIDTH)
+virtual(0xFF89) byte[5]      H_LIST;          // BINTRP LIST
+virtual(0xFF8E) byte[5]      H_BUFL;          // BINTRP BUFLIN (buffer line)
+virtual(0xFF93) byte[5]      H_FRQI;          // BINTRP FRQINT
+virtual(0xFF98) byte[5]      H_SCNE;          // BINTRP
+virtual(0xFF9D) byte[5]      H_FRET;          // BINTRP FRETMP
+virtual(0xFFA2) byte[5]      H_PTRG;          // Start of BIPTRG PTRGET (set pointer)
+virtual(0xFFA7) byte[5]      H_PHYD;          // Start of MSXIO PHYDIO (physical disk input/output)
+virtual(0xFFAC) byte[5]      H_FORM;          // Start of MSXIO FORMAT (disk format)
+virtual(0xFFB1) byte[5]      H_ERRO;          // BINTRP ERROR
+virtual(0xFFB6) byte[5]      H_LPTO;          // Start of MSXIO LPTOUT (printer output)
+virtual(0xFFBB) byte[5]      H_LPTS;          // Start of MSXIO LPTSTT (get printer status)
+virtual(0xFFC0) byte[5]      H_SCRE;          // Start of MSXSTS SCREEN
+virtual(0xFFC5) byte[5]      H_PLAY;          // Start of MSXSTS PLAY
+
+// Extended BIOS call program
+virtual(0xFFCA) byte[5]      FCALL;           // Used by extended BIOS as a hook
+virtual(0xFFCF) byte[5]      DISINT;          // Used by MSX-DOS
+virtual(0xFFD4) byte[5]      ENAINT;          // Used by MSX-DOS
+
+// VDP registers (V9938・V9958)
+virtual(0xFFE7) byte         RG8SAV;           // Value of VDP register #8 (VDP(9))
+virtual(0xFFE8) byte         RG9SAV;           // Value of VDP register #9 (VDP(10))
+virtual(0xFFE9) byte         RG10SA;           // Value of VDP register #10 (VDP(11))
+virtual(0xFFEA) byte         RG11SA;           // Value of VDP register #11 (VDP(12))
+virtual(0xFFEB) byte         RG12SA;           // Value of VDP register #12 (VDP(13))
+virtual(0xFFEC) byte         RG13SA;           // Value of VDP register #13 (VDP(14))
+virtual(0xFFED) byte         RG14SA;           // Value of VDP register #14 (VDP(15))
+virtual(0xFFEE) byte         RG15SA;           // Value of VDP register #15 (VDP(16))
+virtual(0xFFEF) byte         RG16SA;           // Value of VDP register #16 (VDP(17))
+virtual(0xFFF0) byte         RG17SA;           // Value of VDP register #17 (VDP(18))
+virtual(0xFFF1) byte         RG18SA;           // Value of VDP register #18 (VDP(19))
+virtual(0xFFF2) byte         RG19SA;           // Value of VDP register #19 (VDP(20))
+virtual(0xFFF3) byte         RG20SA;           // Value of VDP register #20 (VDP(21))
+virtual(0xFFF4) byte         RG21SA;           // Value of VDP register #21 (VDP(22))
+virtual(0xFFF5) byte         RG22SA;           // Value of VDP register #22 (VDP(23))
+virtual(0xFFF6) byte         RG23SA;           // Value of VDP register #23 (VDP(24))
+virtual(0xFFF7) word         ROMSLT;           // Main RAM slot address
+virtual(0xFFFA) byte         RG25SA;           // Value of VDP register #25 (VDP(26))
+virtual(0xFFFB) byte         RG26SA;           // Value of VDP register #26 (VDP(27))
+virtual(0xFFFC) byte         RG27SA;           // Value of VDP register #27 (VDP(28))
+                                              // 0xFFFD System reserved
+
+// Extended slot selection register
+virtual(0xFFFF) byte         SSLTREG;          // Extended slot selection register

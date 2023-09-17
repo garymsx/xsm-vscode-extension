@@ -1,0 +1,370 @@
+// system reset
+const BDOS = 0x0005;
+const DTA = 0x0080;
+
+const FCB1 = 0x5c;  // parameter 1
+const FCB2 = 0x6c;  // parameter 2
+
+struct FCB_CPM {
+    byte     drive;              // Drive number indicates the disk drive where the file exists (0=default drive, 1=A, 2=B...7=H).
+    char[8]  name;               // File name. If the name is less than 8 characters, it is filled with spaces (20H).
+    char[3]  ext;                // Extension. If the extension is less than 3 characters, it is filled with spaces (20H).
+    byte     currentBlock;       // Current block indicates the block number being referenced during sequential access (0x14, 0x15).
+    byte     filler1;            // System use
+    byte     recordSize;         // The number of records in a block is set (0x14, 0x15).
+    byte     filler2;            // System use
+    byte[4]  fileSize;           // File size
+    word     date;               // Date
+    word     time;               // Time
+    byte     deviceId;           // Device ID indicates the distinction between peripheral devices and disk files.
+    byte     directoryLocation;  // Directory location indicates which directory entry the file corresponds to.
+    word     startCluster;       // Start cluster
+    word     endCluster;         // End cluster
+    word     position;           // Relative position indicates the relative position within the file from the start cluster of the last accessed cluster.
+    byte     currentRecord;      // Current record indicates the record number being referenced during sequential access (0x14, 0x15).
+    byte[3]  randomRecord;       // Random record specifies the record to be accessed (0x21, 0x22, 0x28).
+}
+
+struct FCB {
+    byte     drive;              // Drive number indicates the disk drive where the file exists (0=default drive, 1=A, 2=B...7=H).
+    char[8]  name;               // File name. If the name is less than 8 characters, it is filled with spaces (20H).
+    char[3]  ext;                // Extension. If the extension is less than 3 characters, it is filled with spaces (20H).
+    byte     filler1;            // System use
+    byte     filler2;            // System use
+    word     recordSize;         // Record size (0x26, 0x27).
+    byte[4]  fileSize;           // File size
+    word     date;               // Date
+    word     time;               // Time
+    byte     deviceId;           // Device ID indicates the distinction between peripheral devices and disk files.
+    byte     directoryLocation;  // Directory location indicates which directory entry the file corresponds to.
+    word     startCluster;       // Start cluster
+    word     endCluster;         // End cluster
+    word     position;           // Relative position indicates the relative position within the file from the start cluster of the last accessed cluster.
+    byte     filler3;            // System use
+    byte[4]  randomRecord;       // Random record specifies the record to be accessed (0x21, 0x22, 0x28).
+}
+
+// _BUFIN line buffer (sample)
+struct LINE_BUF {
+    byte max;           // Maximum size. Set the size of the buffer.
+    byte size;          // Size of the input string.
+    char[41]  buffer;   // Buffer. Redefine according to the purpose (40 characters + '\0').
+}
+
+/**
+ * System reset
+ */
+function(BDOS) _TERM0(c = 0x00);
+
+/**
+ * Console input
+ * @return a The character input from the console
+ */ 
+function(BDOS) _CONIN(c = 0x01): a;
+
+/**
+ * Console output
+ * @param e The character code to output
+ */
+function(BDOS) _CONOUT(e, c = 0x02);
+
+/**
+ * Auxiliary input
+ * @return a The character input from the auxiliary input
+ */ 
+function(BDOS) _AUXIN(c = 0x03): a;
+
+/**
+ * Auxiliary output
+ * @param e The character code to output to the auxiliary input
+ */
+function(BDOS) _AUXOUT(e, c = 0x04);
+
+/**
+ * Printer output
+ * @param e The character code to output
+ */
+function(BDOS) _LSTOUT(e, c = 0x05);
+
+/**
+ * Direct console input/output (no echo)
+ * @param e 0xFF - input, other than 0xFF - output the set value as a character code to the console
+ * @return a The character input from the console. Returns 0 if there is no console input.
+ */ 
+function(BDOS) _DIRIO(e, c = 0x06): a;
+
+/**
+ * Direct console input (no echo)
+ * @return a The character input from the console
+ * @remark Not compatible with CP/M
+ */ 
+function(BDOS) _DIRIN(c = 0x07): a;
+
+/**
+ * Console input (no echo)
+ * @return a The character input from the console
+ * @remark Not compatible with CP/M
+ */ 
+function(BDOS) _INNOE(c = 0x08): a;
+
+/**
+ * String output
+ * @param de The starting address of the memory where the string to output to the console is located
+ */ 
+function(BDOS) _STROUT(de, c = 0x09);
+
+/**
+ * String input
+ * @param de The starting address of the line buffer (LINE_BUF structure)
+ *           de + 0 Maximum number of characters
+ *           de + 1 Actual number of input characters
+ *           de + 2 Input string
+ */ 
+function(BDOS) _BUFIN(de, c = 0x0a);
+
+/**
+ * Check console input status
+ * @return a 0xFF - console input available, 0x00 - no console input
+ */ 
+function(BDOS) _CONST(c = 0x0b): a;
+
+/**
+ * Get version number
+ * @return hl In MSX-DOS, always returns 0x0022.
+ */ 
+function(BDOS) _CPMVER(c = 0x0c): hl;
+
+/**
+ * Disk reset
+ */ 
+function(BDOS) _DSKRST(c = 0x0d);
+
+/**
+ * Set default drive
+ * @param e Default drive number (A=0, B=1, H=7)
+ */ 
+function(BDOS) _SELDSK(e, c = 0x0e);
+
+/**
+ * Open file
+ * @param de Starting address of the unopened FCB
+ *           FCB currentBlock: Block number to read
+ * @return A 0x00 - open successful, 0xff - open failed
+ */ 
+function(BDOS) _FOPEN(de, c = 0x0f): a;
+
+/**
+ * Close file
+ * @param de Starting address of the opened FCB
+ * @return a 0x00 - close successful, 0xff - close failed
+ */ 
+function(BDOS) _FCLOSE(de, c = 0x10): a;
+
+/**
+ * Search for file (first match)
+ * @param de Starting address of the unopened FCB
+ * @return a 0x00 - search successful, 0xff - search failed
+ */ 
+function(BDOS) _SFIRST(de, c = 0x11): a;
+
+/**
+ * Search for file (next match)
+ * @return a 0x00 - search successful, 0xff - search failed
+ */ 
+function(BDOS) _SNEXT(c = 0x12): a;
+
+/**
+ * Delete file
+ * @param de Starting address of the unopened FCB
+ * @return a 0x00 - success, 0xff - failure
+ */ 
+function(BDOS) _FDEL(de, c = 0x13): a;
+
+/**
+ * Sequential read
+ * @param de Starting address of the opened FCB
+ * @return a 0x00 - success, 0xff - failure
+ * If the read is successful, the record read into the DTA and subsequent 128 bytes are set.
+ */ 
+function(BDOS) _RDSEQ(de, c = 0x14): a;
+
+/**
+ * Sequential write
+ * @param de Starting address of the opened FCB
+ * FCB currentRecord: Record number to write
+ * DTA + 128: Data to write
+ * @return a 0x00 - success, 0xff - failure
+ */ 
+function(BDOS) _WRSEQ(de, c = 0x15): a;
+
+/**
+ * Create file
+ * @param de Starting address of the unopened FCB
+ * FCB currentBlock: Block number to read
+ * @return a 0x00 - success, 0xff - failure
+ */ 
+function(BDOS) _FMAKE(de, c = 0x16): a;
+
+/**
+ * Rename file
+ * @param de Starting address of the unopened FCB
+ * FCB + 0: Old file name
+ * FCB + 16: New file name
+ * @return a 0x00 - success, 0xff - failure
+ */ 
+function(BDOS) _FREN(de, c = 0x17): a;
+
+/**
+ * Get login vector
+ * @return HL Online drive information
+ */ 
+function(BDOS) _LOGIN(c = 0x18): hl;
+
+/**
+ * Get default drive number
+ * @return a Default drive number (A=0, B=1, H=7)
+ */ 
+function(BDOS) _CURDRV(c = 0x19): a;
+
+/**
+ * Set destination address (DTA)
+ * @param de Address to set as DTA
+ */ 
+function(BDOS) _SETDTA(de, c = 0x1a);
+
+/**
+ * Get disk information
+ * @param e Address to set as DTA
+ * @return a - Number of logical sectors per cluster. FFH if the specified drive is offline.
+ *         bc - Sector size (in bytes)
+ *         de - Total number of clusters
+ *         hl - Total number of unused clusters
+ *         ix - Address of DPB
+ *         iy - Address of FAT buffer
+ */ 
+function(BDOS) _ALLOC(e, c = 0x1b);
+
+/**
+ * Random read
+ * @param de Starting address of the opened FCB
+ * FCB randomRecord: Record number to read
+ * @return a 0x00 - success, 0xff - failure
+ * If the read is successful, the record read into the DTA and subsequent 128 bytes are set.
+ */ 
+function(BDOS) _RDRND(de, c = 0x21): a;
+
+/**
+ * Random write
+ * @param de Starting address of the opened FCB
+ * FCB randomRecord: Record number to write
+ * DTA + 128: Data to write
+ * @return a 0x00 - success, 0xff - failure
+ */ 
+function(BDOS) _WRRND(de, c = 0x22): a;
+
+/**
+ * Get file size
+ * @param de Starting address of the opened FCB
+ * @return a 0x00 - success, 0xff - failure
+ * If successful, the 128-byte size of the specified file is set in the FCB's randomRecord field.
+ */ 
+function(BDOS) _FSIZE(de, c = 0x23): a;
+
+/**
+ * Set random record field
+ * @param de Starting address of the opened FCB
+ * FCB currentBlock: Target block
+ * FCB currentRecord: Target record
+ * @return
+ * Sets the current record position calculated from the current block field and current record field of the FCB in the random record field.
+ */ 
+function(BDOS) _SETRND(de, c = 0x24);
+
+/**
+ * Write random block
+ * @param de Starting address of the opened FCB
+ * FCB recordSize: Record size to write
+ * FCB randomRecord: Starting record to write
+ * Memory area after DTA: Data to write
+ * @return a 0x00 - success, 0xff - failure
+ */ 
+function(BDOS) _WRBLK(de, c = 0x26): a;
+
+/**
+ * Read random block
+ * @param de Starting address of the opened FCB
+ * FCB recordSize: Record size to read
+ * FCB randomRecord: Starting record to read
+ * @return a 0x00 - success, 0xff - failure
+ *         hl Number of records actually read
+ */ 
+function(BDOS) _RDBLK(de, c = 0x27): a;
+
+/**
+ * Random write with "0" fill
+ * @param de Starting address of the opened FCB
+ * FCB randomRecord: Record number to write
+ * DTA + 128: Data to write
+ * @return a 0x00 - success, 0xff - failure
+ */ 
+function(BDOS) _WRZER(de, c = 0x28): a;
+
+/**
+ * Get date
+ * @return a  Day of the week (0=Sunday...6=Saturday)
+ *         hl Year (1980-2079)
+ *         d  Month (1-12)
+ *         e  Day (1-31)
+ */ 
+function(BDOS) _GDATE(c = 0x2a);
+
+/**
+ * Set date
+ * @param  hl Year (1980-2079)
+ * @param  d  Month (1-12)
+ * @param  e  Day (1-31)
+ * @return a 0x00 - success, 0xff - failure
+ */ 
+function(BDOS) _SDATE(hl,d,e,c = 0x2b): a;
+
+/**
+ * Get time
+ * @return h Hour
+ *         l Minute
+ *         d Second
+ *         e 1/100 second
+ */ 
+function(BDOS) _GTIME(c = 0x2c);
+
+/**
+ * Set time
+ * @param  h Hour
+ * @param  l Minute
+ * @param  d Second
+ * @return a 0x00 - success, 0xff - failure
+ */ 
+function(BDOS) _STIME(h,l,d,c = 0x2d);
+
+/**
+ * Set verify flag
+ * @param  e 0x00 - reset verify flag, 0x01 - set verify flag
+ */ 
+function(BDOS) _VERIFY(e, c = 0x2e);
+
+/**
+ * Read absolute sector
+ * @param  de Logical sector number to read (if multiple, the first logical sector number)
+ * @param  h  Number of logical sectors to read
+ * @param  l  Drive number of the disk to read (A=0, B=1, H=7)
+ * @return
+ *         Sets the content read into the memory after DTA (logical sector size × number of logical sectors).
+ */ 
+function(BDOS) _RDABS(c = 0x2f);
+
+/**
+ * Write absolute sector
+ * @param  de Logical sector number to write (if multiple, the first logical sector number)
+ * @param  h  Number of logical sectors to write
+ * @param  l  Drive number of the disk to write (A=0, B=1, H=7)
+ */ 
+function(BDOS) _WRABS(c = 0x30);

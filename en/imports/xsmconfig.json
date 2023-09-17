@@ -1,0 +1,14 @@
+{
+	"locale": "en",
+	"rootDir": "./",
+	"outputDir": "./build",
+	"importDir": [],
+	"optimize": {
+		"cacheRegister" : true,
+		"jrJump": true
+	},
+    "debug": {
+		"source": true,
+		"comment": true
+    }
+}
