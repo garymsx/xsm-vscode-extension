@@ -9,6 +9,8 @@ Z80構造化アセンブリ言語XSMのシンタックスハイライト、ア�
 - [xsm-vscode-extension](https://github.com/garymsx/xsm-vscode-extension)
 
 ### アップデート
+- 0.0.12
+  - importsを言語別に分けました(マニュアルに公開)
 - 0.0.11
   - `from`のコンバーターのオプションの書式を変更(\[変数=値\, ...], 方式)
 - 0.0.9
