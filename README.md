@@ -9,6 +9,8 @@ What a fancy term.
 - [xsm-vscode-extension](https://github.com/garymsx/xsm-vscode-extension)
 
 ### Updates
+- 0.0.12
+  - Separated imports by language (published in the documentation)
 - 0.0.11
   - Changed the format of the options for the `from` converter (\[variable=value, ...], format)
 - 0.0.9
