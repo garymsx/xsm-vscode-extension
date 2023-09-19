@@ -1,4 +1,5 @@
 import "xsm/msx/extbios.xsm";
+import "xsm/unpack/unpackBPE.xsm";
 
 const IS_ROM = 1; // 0:com 1:ROM化
 
@@ -15,13 +16,14 @@ if(IS_ROM == 1) { // 定数によるIFはマクロのように使用可能
         byte[6] RESERVE;   // 0A-0F:予約領域
     };
     // この場所に変数を展開
+    @ignorewarn
     expand ROM_HEADER romHeader = {
         `AB`, main, 0, 0, 0, {0,0,0,0,0,0}
     };
 }
 
 // フォントデータ
-byte[] font = from("font.bmp", "sc1", "pack=PRLE");
+byte[] font = from("font.bmp", "sc1", "pack=BPE");
 virtual byte[8 * 256 + 32] fontBuffer;
 
 // 乱数シード値
@@ -53,7 +55,7 @@ function main() {
         seed = JIFFY;
 
         di;
-            UNPACK_PRLE(fontBuffer, font, sizeof(font));
+            unpackBPE(fontBuffer, font, sizeof(font));
             // フォントデータ読み込み、カラー設定
             LOAD_PATTERN(fontBuffer                       , sizeof(fontBuffer) - 32);
             LOAD_COLOR  (fontBuffer + sizeof(fontBuffer) - 32, 32);
@@ -288,47 +290,6 @@ function PRINT(HL, B = 255) {
             VPOKE(A);
             HL++;
         }
-    }
-}
-
-/**
- * Packed RLEの解凍処理
- * @param DE 解凍先のアドレス
- * @param HL 解凍元のアドレス
- * @param BC 解凍元のサイズ
- */
-function UNPACK_PRLE(DE, HL, BC) dispose AF, BC, DE, HL, IX {
-    IX = DE;
-    DE = BC;
-    while() {
-        A = *HL; // 長さ
-        HL++;
-        DE--;
-        // 連長モード
-        if((signed)A >= 0) {
-            B = *HL; // 展開するデータ
-            HL++;
-            DE--;
-            while((signed)A >= 0) {
-                *IX = B;
-                IX++;
-                A--;
-            }
-        }
-        // リテラルモード
-        else {
-            while((signed)A < 0) {
-                B = *HL;
-                HL++;
-
-                *IX = B;
-                IX++;
-                A++;
-
-                DE--;
-            }
-        }
-        using(HL) unsafe if(DE == 0) break;
     }
 }
 
