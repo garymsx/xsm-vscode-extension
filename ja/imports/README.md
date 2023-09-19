@@ -19,3 +19,10 @@
 - [workarea.xsm](./xsm/msx/workarea.xsm)
 
   BIOSやBASICから参照されるワークエリアが定義されています。
+
+- [unpackRLE.xsm](./xsm/unpack/unpackRLE.xsm)
+- [unpackPRLE.xsm](./xsm/unpack/unpackPRLE.xsm)
+- [unpackSRLE.xsm](./xsm/unpack/unpackSRLE.xsm)
+- [unpackBPE.xsm](./xsm/unpack/unpackBPE.xsm)
+
+  RLE/PRLE/SRLE/BPE圧縮されたデータを展開する関数が定義されています。

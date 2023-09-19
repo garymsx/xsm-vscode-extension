@@ -5,7 +5,7 @@
 - [bios.xsm](./xsm/msx/bios.xsm)
 
   This file defines the BIOS for the MAIN ROM.  
-  It also defines inline functions that can be called directly from DOS via inter-slot calls.
+  It also defines inline functions that can be called directly from DOS through inter-slot calls.
 
 - [extbios.xsm](./xsm/msx/extbios.xsm)
 
@@ -19,3 +19,10 @@
 - [workarea.xsm](./xsm/msx/workarea.xsm)
 
   This file defines the work area that is referenced by the BIOS and BASIC.
+
+- [unpackRLE.xsm](./xsm/unpack/unpackRLE.xsm)
+- [unpackPRLE.xsm](./xsm/unpack/unpackPRLE.xsm)
+- [unpackSRLE.xsm](./xsm/unpack/unpackSRLE.xsm)
+- [unpackBPE.xsm](./xsm/unpack/unpackBPE.xsm)
+
+  These files define functions to decompress RLE/PRLE/SRLE/BPE compressed data.
