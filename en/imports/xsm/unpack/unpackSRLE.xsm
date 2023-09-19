@@ -1,0 +1,43 @@
+/**
+ * Unpacking process of Packed SRLE
+ * @param DE Destination address for unpacking
+ * @param HL Source address for unpacking
+ * @param BC Size of the source
+ */
+function unpackSRLE(DE, HL, BC) dispose AF, BC, DE, HL, IX {
+    // Literal mode
+    IX = DE;
+    DE = BC;
+    C = 1; // Literal mode: 1, FILL mode: 0
+    while() {
+        A = *HL; // Length
+        //using(HL) printNum(A);cr();
+        HL++;
+        DE--;
+        // Run-length mode
+        unsafe if(C == 0) {
+            B = *HL; // Data to be expanded
+            HL++;
+            DE--;
+            while(A > 0) {
+                *IX = B;
+                IX++;
+                A--;
+            }
+            C = 1;
+        }
+        // Literal mode
+        else {
+            while(A > 0) {
+                B = *HL;
+                HL++;
+                *IX = B;
+                IX++;
+                A--;
+                DE--;
+            }
+            C = 0;
+        }
+        if(D == 0 && E == 0) break;
+    }
+}

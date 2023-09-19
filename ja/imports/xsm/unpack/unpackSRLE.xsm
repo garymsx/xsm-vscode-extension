@@ -1,0 +1,44 @@
+/**
+ * Packed SRLEの解凍処理
+ * @param DE 解凍先のアドレス
+ * @param HL 解凍元のアドレス
+ * @param BC 解凍元のサイズ
+ */
+function unpackSRLE(DE, HL, BC) dispose AF, BC, DE, HL, IX {
+    // リテラルモード
+    IX = DE;
+    DE = BC;
+    C = 1; // リテラルモード:1、FILLモード:0
+    while() {
+        A = *HL; // 長さ
+        //using(HL) printNum(A);cr();
+        HL++;
+        DE--;
+        // 連長モード
+        unsafe if(C == 0) {
+            B = *HL; // 展開するデータ
+            HL++;
+            DE--;
+            while(A > 0) {
+                *IX = B;
+                IX++;
+                A--;
+            }
+            C = 1;
+        }
+        // リテラルモード
+        else {
+            while(A > 0) {
+                B = *HL;
+                HL++;
+                *IX = B;
+                IX++;
+                A--;
+                DE--;
+            }
+            C = 0;
+        }
+        if(D == 0 && E == 0) break;
+    }
+}
+

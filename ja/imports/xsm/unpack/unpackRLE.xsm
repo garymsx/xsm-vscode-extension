@@ -1,0 +1,25 @@
+/**
+ * Packed RLEの解凍処理
+ * @param DE 解凍先のアドレス
+ * @param HL 解凍元のアドレス
+ * @param BC 解凍元のサイズ
+ */
+function unpackRLE(DE, HL, BC) dispose AF, BC, DE, HL, IX {
+    IX = DE;
+    DE = BC;
+    while() {
+        A = *HL; // 長さ
+        HL++;
+        DE--;
+        B = *HL; // 展開するデータ
+        HL++;
+        DE--;
+        while() {
+            *IX = B;
+            IX++;
+            if(A == 0) break;
+            A--;
+        }
+        if(D == 0 && E == 0) break;
+    }
+}

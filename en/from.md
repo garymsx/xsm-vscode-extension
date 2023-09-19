@@ -38,11 +38,11 @@ Please refer to the Wiki or other sources for the mechanism of RLE.
     - RLE
       Performs RLE compression.
       The format is as follows:
-      |Item    |Size  | Meaning                                      |
-      |:-------|-----:|:---------------------------------------------|
-      |Data length| 1  | Length of consecutive data, 0 to 255.        |
-      |Value   | 1    | Specifies the data to be repeated.           |
-      |        |      | Repeated until the end of the data.          |
+      |Item    |Size  | Meaning                                          |
+      |:-------|-----:|:-------------------------------------------------|
+      |Data length| 1  | Length of consecutive data, 0 to 255.           |
+      |Value   | 1    | Specifies the data to be repeated.               |
+      |        |      | Repeated until the end of the data.              |
 
     - PRLE
       Performs PackBits RLE compression.
@@ -52,6 +52,15 @@ Please refer to the Wiki or other sources for the mechanism of RLE.
       |Data length| 1    | Data length, 0 to 127 represents consecutive data, -1 to -128 represents discontinuous data. |
       |Value   | 1 to 128 | For consecutive data, specifies the data to be repeated.<br/>For discontinuous data, the data of the length is stored. |
       |        |        | Repeated until the end of the data.                                     |
+
+    - SRLE  
+      Switched RLE compression.  
+      The format is as follows:
+      |Item    |Size    | Meaning                                                                 |
+      |:-------|-------:|:------------------------------------------------------------------------|
+      |Data Length| 1        | Data length, 0 to 255 represents consecutive data. It starts with non-consecutive data at first.|
+      |Value      | 1 to 255 | For consecutive data, it specifies the repeated data.<br/>For non-consecutive data, it contains data of length specified by Data Length. |
+      |        |          | Repeated until the end of the data.                                   |
 
     - BPE
       Performs Bit Pair Encoding compression.

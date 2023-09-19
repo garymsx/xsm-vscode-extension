@@ -1,0 +1,113 @@
+struct BpePair {
+    byte dicFlag;  // ペアデータ有効の場合は1
+    byte first;    // ペアの1バイト目
+    byte second;   // ペアの2バイト目
+}
+
+virtual byte         pairDicCount;  // 辞書数
+virtual BpePair[256] pairDic;       // 辞書
+virtual word         bpePt;         // BPEデータのポインタ
+virtual word         bpeLast;       // BPEデータの末端 + 1
+
+/**
+ * BPEを展開する
+ * @param DE 展開先バッファ
+ * @param HL BPEデータの先頭アドレス
+ * @param BC BPEデータのサイズ
+ */
+function unpackBPE(DE, HL, BC) {
+    using(BC,DE,HL) clear pairDic;
+
+    bpePt = HL;   // BPEデータの先頭アドレス
+    HL += BC;
+    bpeLast = HL; // 終了アドレス
+
+    while() {
+        // データの最後まで読み終えたら終了
+        unsafe(BC) if(bpePt == bpeLast) break;
+
+        // 辞書数
+        A = unpackBPE_read();
+        pairDicCount = A;
+
+        // 辞書の作成
+        while(A != 0) {
+            // IXのアドレスにペア辞書を展開
+            using(AF) {
+                A = unpackBPE_read();
+                IX = unpackBPE_getPairDic(A);
+                (BpePair)IX.dicFlag = 1;
+                (BpePair)IX.first = unpackBPE_read();
+                (BpePair)IX.second = unpackBPE_read();
+            }
+            A--;
+        }
+
+        // データ長
+        L = unpackBPE_read();
+        H = unpackBPE_read();
+
+        unsafe while(HL != 0) {
+            using(HL) {
+                A = unpackBPE_read();
+                unpackBPE_Sub(A);
+            }
+            HL--;
+        }
+
+        break;
+    }
+}
+
+/**
+ * BPEデータ取得
+ * Aレジスタに格納し、ポインタを進める
+ */
+function unpackBPE_read():A {
+    using(HL) {
+        HL = bpePt;
+        A = *HL;
+        HL++;
+        bpePt = HL;
+    }
+    return A;
+}
+
+/**
+ * ペア辞書が引けなくなるまで再帰呼び出し
+ */
+function unpackBPE_Sub(C) dispose AF, BC, HL, IX {
+    IX = unpackBPE_getPairDic(C);
+
+    // 辞書が引けなかったらそのまま出力
+    A = (BpePair)IX.dicFlag;
+    //printHex(C);cr();
+    if(A == 0) {
+        A = C;
+        *DE = A;
+        DE++;
+    }
+    else {
+        // 辞書が引けたらペアを展開して再起呼び出し
+        using(IX) unpackBPE_Sub((BpePair)IX.first);
+        using(IX) unpackBPE_Sub((BpePair)IX.second);
+    }
+}
+
+/**
+ * HLにペア辞書のインデックスのアドレスを設定
+ */
+function unpackBPE_getPairDic(C): IX {
+    // Cに対応する辞書を引く
+    using(HL, BC) {
+        // インデックスを計算してから、ベースのアドレスを足す
+        B = 0;
+        HL = 0;
+        HL += BC;
+        HL += BC;
+        HL += BC;
+        unsafe(BC) HL += pairDic;
+        IX = HL;
+        return IX;
+    }
+}

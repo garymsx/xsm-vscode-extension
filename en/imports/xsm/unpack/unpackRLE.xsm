@@ -1,0 +1,25 @@
+/**
+ * Unpacking process of Packed RLE
+ * @param DE Destination address for unpacking
+ * @param HL Source address for unpacking
+ * @param BC Size of the source data
+ */
+function unpackRLE(DE, HL, BC) dispose AF, BC, DE, HL, IX {
+    IX = DE;
+    DE = BC;
+    while() {
+        A = *HL; // Length
+        HL++;
+        DE--;
+        B = *HL; // Data to be unpacked
+        HL++;
+        DE--;
+        while() {
+            *IX = B;
+            IX++;
+            if(A == 0) break;
+            A--;
+        }
+        if(D == 0 && E == 0) break;
+    }
+}

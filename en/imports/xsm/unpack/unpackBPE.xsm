@@ -1,0 +1,113 @@
+struct BpePair {
+    byte dicFlag;  // If the pair data is valid, it is 1
+    byte first;    // The first byte of the pair
+    byte second;   // The second byte of the pair
+}
+
+virtual byte         pairDicCount;  // Number of dictionaries
+virtual BpePair[256] pairDic;       // Dictionary
+virtual word         bpePt;         // Pointer to BPE data
+virtual word         bpeLast;       // End address of BPE data + 1
+
+/**
+ * Expand BPE
+ * @param DE Destination buffer for expansion
+ * @param HL Starting address of BPE data
+ * @param BC Size of BPE data
+ */
+function unpackBPE(DE, HL, BC) {
+    using(BC,DE,HL) clear pairDic;
+
+    bpePt = HL;   // Starting address of BPE data
+    HL += BC;
+    bpeLast = HL; // End address
+
+    while() {
+        // Exit if reached the end of data
+        unsafe(BC) if(bpePt == bpeLast) break;
+
+        // Number of dictionaries
+        A = unpackBPE_read();
+        pairDicCount = A;
+
+        // Create dictionaries
+        while(A != 0) {
+            // Expand pair dictionary at IX address
+            using(AF) {
+                A = unpackBPE_read();
+                IX = unpackBPE_getPairDic(A);
+                (BpePair)IX.dicFlag = 1;
+                (BpePair)IX.first = unpackBPE_read();
+                (BpePair)IX.second = unpackBPE_read();
+            }
+            A--;
+        }
+
+        // Data length
+        L = unpackBPE_read();
+        H = unpackBPE_read();
+
+        unsafe while(HL != 0) {
+            using(HL) {
+                A = unpackBPE_read();
+                unpackBPE_Sub(A);
+            }
+            HL--;
+        }
+
+        break;
+    }
+}
+
+/**
+ * Get BPE data
+ * Store in A register and advance the pointer
+ */
+function unpackBPE_read():A {
+    using(HL) {
+        HL = bpePt;
+        A = *HL;
+        HL++;
+        bpePt = HL;
+    }
+    return A;
+}
+
+/**
+ * Recursively call until pair dictionary is no longer available
+ */
+function unpackBPE_Sub(C) dispose AF, BC, HL, IX {
+    IX = unpackBPE_getPairDic(C);
+
+    // If dictionary is not available, output as is
+    A = (BpePair)IX.dicFlag;
+    //printHex(C);cr();
+    if(A == 0) {
+        A = C;
+        *DE = A;
+        DE++;
+    }
+    else {
+        // If dictionary is available, expand the pair and recursively call
+        using(IX) unpackBPE_Sub((BpePair)IX.first);
+        using(IX) unpackBPE_Sub((BpePair)IX.second);
+    }
+}
+
+/**
+ * Set the address of the pair dictionary index in HL
+ */
+function unpackBPE_getPairDic(C): IX {
+    // Look up the dictionary corresponding to C
+    using(HL, BC) {
+        // Calculate the index and add it to the base address
+        B = 0;
+        HL = 0;
+        HL += BC;
+        HL += BC;
+        HL += BC;
+        unsafe(BC) HL += pairDic;
+        IX = HL;
+        return IX;
+    }
+}
